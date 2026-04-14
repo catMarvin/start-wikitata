@@ -278,6 +278,7 @@ function cmdHtml(text, opts) {
     h += `<span style="font-size:10px;color:var(--tx2);align-self:center">Opens Terminal → runs command → copies output to clipboard</span>`;
   }
   h += `</div>`;
+  h += `<p style="font-size:10px;color:var(--tx2);margin-bottom:8px">First time? macOS may say <b>"can\'t be opened"</b> — right-click the downloaded file → <b>Open</b>, then click <b>Open</b> again. This only happens once.</p>`;
   return h;
 }
 
@@ -374,7 +375,7 @@ function runInTerminal(cmd, isVerify, label) {
     script += 'echo ""\n';
   }
 
-  script += 'read -p "  Press Enter to close this window..." _\n';
+  script += 'read -p "  Press Enter to close this window... " _\n';
 
   // Create blob and download as .command file
   const blob = new Blob([script], { type: 'application/octet-stream' });
@@ -402,7 +403,32 @@ function cc(el) {
 // ═══════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════
-render();
+
+// Controlled window size — if opened directly, offer to relaunch in a sized popup
+if (!window.opener && !sessionStorage.getItem('wt-launched')) {
+  document.querySelector('.c').innerHTML = `
+    <div style="text-align:center;padding:120px 20px">
+      <h1 style="margin-bottom:12px">wikiTaTa</h1>
+      <p style="color:var(--tx2);font-size:15px;margin-bottom:40px">Developer setup for your Mac.</p>
+      <button onclick="launchSetup()" style="background:var(--acc);color:#fff;border:none;padding:14px 40px;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;font-family:var(--f)">Start Setup</button>
+      <p style="color:var(--tx2);font-size:11px;margin-top:16px">Opens in a focused window</p>
+    </div>`;
+} else {
+  render();
+}
+
+function launchSetup() {
+  const w = 820, h = 900;
+  const left = Math.round((screen.width - w) / 2);
+  const top = Math.round((screen.height - h) / 2);
+  const win = window.open(location.href, 'wt-setup',
+    'width='+w+',height='+h+',left='+left+',top='+top+',resizable=yes,scrollbars=yes');
+  if (win) {
+    sessionStorage.setItem('wt-launched', '1');
+    win.sessionStorage.setItem('wt-launched', '1');
+    document.querySelector('.c').innerHTML = '<div style="text-align:center;padding:120px 20px"><p style="color:var(--tx2)">Setup opened in a new window.<br>You can close this tab.</p></div>';
+  }
+}
 </script>
 </body>
 </html>
