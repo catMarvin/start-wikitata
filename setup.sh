@@ -356,6 +356,14 @@ else
   fi
 fi
 
+# Install MCP server dependencies
+if [ -f "$HOME_DIR/git/wikitata/wt-mcp-server/package.json" ]; then
+  info "Installing wt-mcp-server dependencies..."
+  cd "$HOME_DIR/git/wikitata/wt-mcp-server" && npm install --silent 2>&1 | tail -1
+  ok "MCP server dependencies installed"
+  cd "$HOME_DIR"
+fi
+
 blank
 
 # Claude config
