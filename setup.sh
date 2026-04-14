@@ -24,6 +24,17 @@ TOTAL=8
 ERRORS=0
 SKIPPED=0
 
+# ── Open the landing page if no username provided (gate first) ───────────────
+if [ -z "${WT_USERNAME:-}" ] && [ -z "${1:-}" ]; then
+  open "https://catmarvin.github.io/start-wikitata/" 2>/dev/null
+  echo ""
+  echo -e "  ${BD}Opening the wikiTaTa setup page in your browser...${RST}"
+  echo -e "  ${D}Enter your username and invite code there first.${RST}"
+  echo -e "  ${D}The browser will give you the right command to run here.${RST}"
+  echo ""
+  exit 0
+fi
+
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 step_header() {
