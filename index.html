@@ -211,11 +211,38 @@ const STEPS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════
-// STATE
+// STATE + PERSISTENCE
 // ═══════════════════════════════════════════════════════════════
-let curStep = 0;
-let stepResults = {}; // stepId -> 'done'
-let cmdRegistry = []; // stored commands for Run in Terminal buttons
+const STORAGE_KEY = 'wt-setup-progress';
+
+function loadProgress() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch(_) {}
+  return { curStep: 0, stepResults: {}, startedAt: new Date().toISOString() };
+}
+
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      curStep, stepResults, startedAt: _progress.startedAt,
+      lastUpdated: new Date().toISOString()
+    }));
+  } catch(_) {}
+}
+
+function resetProgress() {
+  localStorage.removeItem(STORAGE_KEY);
+  curStep = 0;
+  stepResults = {};
+  render();
+}
+
+let _progress = loadProgress();
+let curStep = _progress.curStep || 0;
+let stepResults = _progress.stepResults || {};
+let cmdRegistry = [];
 
 // ═══════════════════════════════════════════════════════════════
 // RENDER
@@ -308,6 +335,7 @@ function checkVerify(stepId, subIdx) {
 
   if (sub.pass.test(output)) {
     stepResults[subId] = 'pass';
+    saveProgress();
     res.innerHTML = `<div class="result pass">&#10003; ${sub.passMsg || 'Passed'}</div>`;
 
     // If skipOnPass, auto-advance to next step
@@ -331,6 +359,7 @@ function checkVerify(stepId, subIdx) {
 // ═══════════════════════════════════════════════════════════════
 function advanceStep(idx) {
   curStep = idx + 1;
+  saveProgress();
   if (curStep >= STEPS.length) {
     render();
     document.getElementById('fin').style.display = 'block';
@@ -431,15 +460,29 @@ function cc(el) {
 
 // Controlled window size — if opened directly, offer to relaunch in a sized popup
 if (!window.opener && !sessionStorage.getItem('wt-launched')) {
+  const hasProgress = curStep > 0 && curStep < STEPS.length;
+  const stepName = hasProgress ? STEPS[curStep]?.title : '';
   document.querySelector('.c').innerHTML = `
-    <div style="text-align:center;padding:120px 20px">
+    <div style="text-align:center;padding:100px 20px">
       <h1 style="margin-bottom:12px">wikiTaTa</h1>
-      <p style="color:var(--tx2);font-size:15px;margin-bottom:40px">Developer setup for your Mac.</p>
-      <button onclick="launchSetup()" style="background:var(--acc);color:#fff;border:none;padding:14px 40px;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;font-family:var(--f)">Start Setup</button>
-      <p style="color:var(--tx2);font-size:11px;margin-top:16px">Opens in a focused window</p>
+      ${hasProgress
+        ? `<p style="color:var(--tx2);font-size:15px;margin-bottom:8px">Welcome back.</p>
+           <p style="color:var(--tx);font-size:14px;margin-bottom:32px">You completed <b>${curStep}/${STEPS.length}</b> steps. Next up: <b>${stepName}</b></p>
+           <button onclick="launchSetup()" style="background:var(--grn);color:#000;border:none;padding:14px 40px;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;font-family:var(--f);margin-bottom:12px">Resume Setup</button><br>
+           <button onclick="resetAndLaunch()" style="background:transparent;color:var(--tx2);border:1px solid var(--bd);padding:10px 28px;border-radius:10px;font-size:13px;cursor:pointer;font-family:var(--f);margin-top:8px">Start Over</button>
+           <p style="color:var(--tx2);font-size:10px;margin-top:12px">Starting over is safe — already-installed tools will be detected and skipped automatically.</p>`
+        : `<p style="color:var(--tx2);font-size:15px;margin-bottom:40px">Developer setup for your Mac.</p>
+           <button onclick="launchSetup()" style="background:var(--acc);color:#fff;border:none;padding:14px 40px;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;font-family:var(--f)">Start Setup</button>
+           <p style="color:var(--tx2);font-size:11px;margin-top:16px">Opens in a focused window</p>`
+      }
     </div>`;
 } else {
   render();
+}
+
+function resetAndLaunch() {
+  resetProgress();
+  launchSetup();
 }
 
 function launchSetup() {
