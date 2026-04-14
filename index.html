@@ -155,12 +155,37 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px}
 
   <!-- ═══ COMPLETE ═══ -->
   <div class="complete" id="complete-view">
-    <h2>You're all set</h2>
-    <p style="color:var(--tx2);font-size:14px;line-height:1.6;margin-bottom:20px">
-      Open a new terminal and type <code style="background:var(--code);padding:2px 6px;border-radius:4px;font-family:var(--m)">claude</code><br>
-      Then say <code style="background:var(--code);padding:2px 6px;border-radius:4px;font-family:var(--m)">start session sop</code>
+    <div style="font-size:48px;margin-bottom:16px">&#10024;</div>
+    <h2 style="font-size:24px;margin-bottom:4px">You're all set</h2>
+    <p id="complete-user" style="color:var(--grn);font-size:15px;margin-bottom:24px"></p>
+
+    <div style="text-align:left;background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:20px;margin-bottom:24px">
+      <p style="font-size:13px;color:var(--tx2);margin-bottom:12px">Everything is installed and configured. Here's what just happened:</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--grn)">&#10003;</span><span style="font-size:12px;color:var(--tx2)">Xcode, Homebrew, Node.js</span></div>
+        <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--grn)">&#10003;</span><span style="font-size:12px;color:var(--tx2)">Claude Code, Supabase CLI, Vercel CLI</span></div>
+        <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--grn)">&#10003;</span><span style="font-size:12px;color:var(--tx2)">SSH key + GitHub access</span></div>
+        <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--grn)">&#10003;</span><span style="font-size:12px;color:var(--tx2)">wikiTaTa repo + MCP connections</span></div>
+        <div style="display:flex;gap:8px;align-items:center"><span style="color:var(--grn)">&#10003;</span><span style="font-size:12px;color:var(--tx2)">Shell tools + environment</span></div>
+      </div>
+    </div>
+
+    <div style="background:var(--sf);border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:20px;margin-bottom:24px">
+      <p style="font-size:14px;font-weight:600;margin-bottom:8px">What's next</p>
+      <p style="font-size:13px;color:var(--tx2);line-height:1.6">
+        The Terminal is asking if you want to launch Claude Code.<br>
+        Say <b>yes</b>, then tell Claude: <code style="background:var(--code);padding:2px 6px;border-radius:4px;font-family:var(--m);font-size:12px">start session sop</code>
+      </p>
+      <p style="font-size:13px;color:var(--tx2);line-height:1.6;margin-top:8px">
+        Claude will know your name, your projects, and your tools.<br>
+        No setup. No explaining. Just start working.
+      </p>
+    </div>
+
+    <p style="font-size:11px;color:var(--tx2);line-height:1.6">
+      You can close this window. Everything is saved.<br>
+      Next time, just open Terminal and type <code style="background:var(--code);padding:2px 6px;border-radius:4px;font-family:var(--m);font-size:11px">claude</code>.
     </p>
-    <p style="color:var(--tx2);font-size:12px">Claude will know who you are.</p>
   </div>
 </div>
 
@@ -348,9 +373,12 @@ if (saved) {
 }
 
 // Check if returning from completed setup
-if (new URLSearchParams(window.location.search).get('done')) {
+const params = new URLSearchParams(window.location.search);
+if (params.get('done')) {
   document.getElementById('gate-view').style.display = 'none';
   document.getElementById('complete-view').style.display = 'block';
+  const doneUser = params.get('user') || verifiedUser || 'there';
+  document.getElementById('complete-user').textContent = 'Welcome to wikiTaTa, ' + doneUser + '.';
 }
 </script>
 </body>

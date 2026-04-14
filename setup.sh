@@ -553,5 +553,23 @@ printf '\n'
 echo -e "  ${BAR}"
 printf '\n'
 
-# Open browser back to completion page
-open "https://catmarvin.github.io/start-wikitata/?done=1" 2>/dev/null
+# Open browser to completion page
+open "https://catmarvin.github.io/start-wikitata/?done=1&user=$WT_USERNAME" 2>/dev/null
+
+blank
+read -p "  Ready to launch Claude Code? (y/n) " LAUNCH
+if [[ "$LAUNCH" =~ ^[Yy] ]]; then
+  clear
+  printf '\n'
+  echo -e "  ${BAR}"
+  echo -e "  ${BD}Launching Claude Code...${RST}"
+  echo -e "  ${BAR}"
+  echo -e "  ${D}Say: ${C}start session sop${RST}"
+  printf '\n'
+  claude
+else
+  printf '\n'
+  echo -e "  ${D}When you're ready, open a new terminal and type:${RST}"
+  echo -e "  ${C}${BD}claude${RST}"
+  printf '\n'
+fi
