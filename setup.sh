@@ -61,11 +61,13 @@ has() { command -v "$1" >/dev/null 2>&1; }
 step_header "Xcode Command Line Tools" "Git and build essentials for macOS"
 
 if xcode-select -p >/dev/null 2>&1; then
-  ok "Xcode already installed"
+  ok "Xcode is already installed. Great!"
   ok "$(git --version)"
-  SKIPPED=$((SKIPPED + 1))
+  dim ""
+  dim "Moving on to the next step..."
+  sleep 1.5
 else
-  info "Installing Xcode Command Line Tools..."
+  info "Xcode isn't installed yet — let's fix that."
   blank
   xcode-select --install 2>/dev/null
   blank
@@ -76,14 +78,13 @@ else
   blank
 
   if xcode-select -p >/dev/null 2>&1; then
-    ok "Xcode installed successfully"
+    ok "Xcode installed successfully!"
     ok "$(git --version)"
   else
     fail "Xcode install didn't complete — try running xcode-select --install manually"
+    wait_for_enter
   fi
 fi
-
-wait_for_enter
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 2: Homebrew
@@ -92,11 +93,14 @@ wait_for_enter
 step_header "Homebrew" "macOS package manager — makes installing everything else clean"
 
 if has brew; then
-  ok "Homebrew already installed"
+  ok "Homebrew is already installed. Nice!"
   dim "$(brew --version | head -1)"
-  SKIPPED=$((SKIPPED + 1))
+  dim ""
+  dim "Moving on to the next step..."
+  sleep 1.5
 else
-  info "Installing Homebrew..."
+  info "Homebrew isn't installed yet — let's get it."
+  dim "This is the macOS package manager. Makes everything else easy."
   blank
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   blank
@@ -105,15 +109,14 @@ else
   eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null
 
   if has brew; then
-    ok "Homebrew installed"
+    ok "Homebrew installed successfully!"
     dim "$(brew --version | head -1)"
   else
     fail "Homebrew not found after install"
     info "Try opening a new terminal tab and running: brew --version"
+    wait_for_enter
   fi
 fi
-
-wait_for_enter
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 3: Node.js
@@ -123,12 +126,16 @@ step_header "Node.js" "Required for Claude Code, the setup wizard, and all CLI t
 
 if has node; then
   NODE_V=$(node -v)
-  ok "Node.js already installed — $NODE_V"
+  ok "Node.js is already installed — $NODE_V. Perfect!"
   dim "npm $(npm -v)"
-  SKIPPED=$((SKIPPED + 1))
+  dim ""
+  dim "Moving on to the next step..."
+  sleep 1.5
 else
   if has brew; then
-    info "Installing Node.js via Homebrew..."
+    info "Node.js isn't installed yet — installing via Homebrew now."
+    dim "This powers Claude Code and all the CLI tools."
+    blank
     brew install node
     blank
 
@@ -137,14 +144,14 @@ else
       dim "npm $(npm -v)"
     else
       fail "Node.js install failed — try: brew install node"
+      wait_for_enter
     fi
   else
-    fail "Can't install Node.js — Homebrew not available"
+    fail "Can't install Node.js — Homebrew isn't available"
     info "Go back and install Homebrew first, then re-run this script"
+    wait_for_enter
   fi
 fi
-
-wait_for_enter
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 4: CLI Tools (Claude Code, Supabase, Vercel)
@@ -157,34 +164,37 @@ if ! has npm; then
 else
   # Claude Code
   if has claude; then
-    ok "Claude Code $(claude --version 2>/dev/null | head -1 || echo 'installed')"
+    ok "Claude Code — already installed"
   else
-    info "Installing Claude Code..."
+    info "Installing Claude Code — this is the AI assistant."
     npm install -g @anthropic-ai/claude-code 2>&1 | tail -2
-    has claude && ok "Claude Code installed" || fail "Claude Code install failed"
+    has claude && ok "Claude Code installed!" || fail "Claude Code install failed"
   fi
 
   # Supabase CLI
   if has supabase; then
-    ok "Supabase CLI $(supabase --version 2>/dev/null | head -1)"
+    ok "Supabase CLI — already installed"
   else
-    info "Installing Supabase CLI..."
+    info "Installing Supabase CLI — database tools."
     if has brew; then
       brew install supabase/tap/supabase 2>&1 | tail -2
     else
       npm install -g supabase 2>&1 | tail -2
     fi
-    has supabase && ok "Supabase CLI installed" || fail "Supabase CLI install failed"
+    has supabase && ok "Supabase CLI installed!" || fail "Supabase CLI install failed"
   fi
 
   # Vercel CLI
   if has vercel; then
-    ok "Vercel CLI $(vercel --version 2>/dev/null | head -1)"
+    ok "Vercel CLI — already installed"
   else
-    info "Installing Vercel CLI..."
+    info "Installing Vercel CLI — deployment tools."
     npm install -g vercel@latest 2>&1 | tail -2
-    has vercel && ok "Vercel CLI installed" || fail "Vercel CLI install failed"
+    has vercel && ok "Vercel CLI installed!" || fail "Vercel CLI install failed"
   fi
+
+  blank
+  ok "All CLI tools ready."
 fi
 
 wait_for_enter
@@ -222,19 +232,20 @@ mkdir -p "$HOME_DIR/git"
 
 # Clone
 if [ -d "$HOME_DIR/git/wikitata" ]; then
-  ok "Repo already cloned"
+  ok "Repo is already cloned. Pulling latest..."
+  cd "$HOME_DIR/git/wikitata" && git pull 2>/dev/null
   if [ -f "$HOME_DIR/git/wikitata/wt-mcp-server/index.js" ]; then
     ok "wt-mcp-server found"
   else
-    warn "wt-mcp-server/index.js missing — may need: cd ~/git/wikitata && git pull"
+    warn "wt-mcp-server/index.js missing — may need a fresh clone"
   fi
 else
-  info "Cloning wikitata repo..."
+  info "Cloning the wikiTaTa repo — this is where your tools live."
   if git clone git@github.com:catMarvin/wikitata.git "$HOME_DIR/git/wikitata" 2>/dev/null; then
     ok "Cloned via SSH"
   elif git clone https://github.com/catMarvin/wikitata.git "$HOME_DIR/git/wikitata" 2>/dev/null; then
     ok "Cloned via HTTPS"
-    warn "SSH failed — you may need to add your SSH key for push access"
+    warn "SSH clone failed — HTTPS works but you'll need SSH for push access later"
   else
     fail "Could not clone — check your SSH key is added to GitHub"
   fi
