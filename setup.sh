@@ -262,8 +262,8 @@ if [ -f "$SSH_KEY" ]; then
     blank
     echo -e "  ${G}$(cat ${SSH_KEY}.pub)${RST}"
     blank
-    info "Go to: https://github.com/settings/keys"
-    info "Click 'New SSH Key', paste the key above, and save."
+    info "Send this key to the wikiTaTa team to get access."
+    info "Or add it yourself at: https://github.com/settings/keys"
     blank
     read -p "  Press Enter after you've added the key to GitHub... " _unused
     blank
