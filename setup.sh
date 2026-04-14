@@ -400,19 +400,19 @@ blank
 mkdir -p "$HOME_DIR/.claude"
 MCP_PATH="$HOME_DIR/git/wikitata/wt-mcp-server/index.js"
 
-dim "Writing ~/.claude/.mcp.json"
-cat > "$HOME_DIR/.claude/.mcp.json" << EOF
+if has claude; then
+  dim "Registering wikiTaTa MCP server with Claude Code..."
+  claude mcp add --scope user wikitata node "$MCP_PATH" \
+    -e WT_USER="$WT_USERNAME" \
+    -e WT_SB_URL="https://onoujmfhlrhvcqzjniei.supabase.co" \
+    -e WT_SB_KEY="sb_publishable_QMzEps5hwDAVp0RI2uFlkQ_VyPGa2MK" 2>/dev/null \
+    && ok "wikiTaTa MCP registered (user scope)" \
+    || warn "MCP registration failed — run 'claude mcp add' manually after setup"
+else
+  warn "Claude Code not found — writing .mcp.json as fallback"
+  cat > "$HOME_DIR/.claude/.mcp.json" << EOF
 {
   "mcpServers": {
-    "supabase": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@supabase/mcp-server-supabase@latest",
-        "--access-token",
-        "sbp_v0_03a48bd302ba80ab5c454a5113135c7e5d0b95d7"
-      ]
-    },
     "wikitata": {
       "command": "node",
       "args": ["$MCP_PATH"],
@@ -425,7 +425,8 @@ cat > "$HOME_DIR/.claude/.mcp.json" << EOF
   }
 }
 EOF
-ok ".mcp.json"
+  ok ".mcp.json (fallback)"
+fi
 
 if [ ! -f "$HOME_DIR/.claude/settings.json" ]; then
   dim "Writing ~/.claude/settings.json"
