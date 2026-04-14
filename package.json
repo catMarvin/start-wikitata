@@ -1,0 +1,25 @@
+{
+  "name": "@wikitata/start",
+  "version": "0.1.0",
+  "description": "wikiTaTa developer onboarding — setup wizard + terminal server",
+  "license": "MIT",
+  "author": "Todd Lamothe",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/catMarvin/start-wikitata.git"
+  },
+  "bin": {
+    "wikitata-setup": "./server.js"
+  },
+  "files": [
+    "server.js",
+    "setup.html",
+    "README.md"
+  ],
+  "dependencies": {
+    "ws": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
