@@ -66,8 +66,22 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px;text-al
 .cmd-btn.ready .chk::after{content:''}
 @keyframes popIn{from{transform:scale(0) rotate(-45deg)}to{transform:scale(1) rotate(0)}}
 
-/* Step number in button */
-.cmd-btn .micro{font-size:9px;font-weight:700;opacity:.5;margin-right:2px}
+/* Chase marquee — animated border highlight */
+.chase{position:relative;overflow:visible}
+.chase::before{
+  content:'';position:absolute;inset:-2px;border-radius:10px;z-index:1;pointer-events:none;
+  background:conic-gradient(from var(--chase-angle,0deg),var(--grn),transparent 40%,transparent 60%,var(--grn));
+  mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask-composite:exclude;-webkit-mask-composite:xor;
+  padding:2px;animation:chaseRotate 2s linear infinite;
+}
+@keyframes chaseRotate{to{--chase-angle:360deg}}
+@property --chase-angle{syntax:'<angle>';initial-value:0deg;inherits:false}
+
+/* Pulse fallback for browsers without @property */
+@supports not (background:conic-gradient(from 0deg,red,blue)){
+  .chase::before{background:var(--grn);opacity:.3;animation:chasePulse 1.5s ease-in-out infinite}
+  @keyframes chasePulse{0%,100%{opacity:.15}50%{opacity:.4}}
+}
 
 /* Verify area */
 .verify{margin-top:10px;margin-bottom:10px}
@@ -131,27 +145,17 @@ const STEPS = [
     desc: 'Installs Git and build essentials.',
     subs: [
       {
-        label: 'Check if already installed',
-        cmd: 'xcode-select -p 2>&1 && git --version 2>&1 && echo "XCODE_OK" || echo "XCODE_MISSING"',
-        verify: true,
-        pass: /XCODE_OK/,
-        passMsg: 'Excellent — Xcode is already installed and Git is ready. Next up: Homebrew (package manager), then Node.js, then the full setup wizard takes over.',
-        failMsg: 'Not installed yet — run the install command below.',
-        skipOnPass: true
-      },
-      {
-        label: 'Install',
-        info: 'A system popup appears — click <b>Install</b> and wait 2-5 minutes.',
-        cmd: 'xcode-select --install'
+        label: 'Check & Install',
+        info: 'This checks if Xcode is installed. If not, a system popup appears — click <b>Install</b> and wait 2-5 minutes. Then run the verify.',
+        cmd: 'if xcode-select -p >/dev/null 2>&1; then echo "Already installed"; git --version; echo "XCODE_OK"; else echo "Installing Xcode Command Line Tools..."; xcode-select --install; echo "XCODE_INSTALLING — click Install in the popup, wait for it to finish, then verify below"; fi'
       },
       {
         label: 'Verify',
-        info: 'After install finishes, paste the output below.',
         cmd: 'xcode-select -p && git --version && echo "XCODE_OK"',
         verify: true,
         pass: /XCODE_OK/,
-        failMsg: 'Still not detected. Make sure the Xcode install popup finished completely, then try again.',
-        passMsg: 'Excellent — Xcode is installed and Git is ready. Next up: Homebrew (package manager), then Node.js, then the full setup wizard takes over.'
+        failMsg: 'Xcode is still installing — wait for the popup to finish, then verify again.',
+        passMsg: 'Excellent — Xcode is installed and Git is ready. Next up: Homebrew, then Node.js, then the wizard takes over.'
       }
     ]
   },
@@ -160,30 +164,16 @@ const STEPS = [
     desc: 'macOS package manager. Everything else installs cleanly through this.',
     subs: [
       {
-        label: 'Check if already installed',
-        cmd: 'brew --version 2>&1 && echo "BREW_OK" || echo "BREW_MISSING"',
+        label: 'Check & Install',
+        info: 'This checks for Homebrew and installs it if missing. Takes 1-2 minutes if installing.',
+        cmd: 'if command -v brew >/dev/null 2>&1; then echo "Homebrew already installed"; brew --version; echo "BREW_OK"; else echo "Installing Homebrew..."; /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; echo \'eval "$(/opt/homebrew/bin/brew shellenv)"\' >> ~/.zprofile; eval "$(/opt/homebrew/bin/brew shellenv)"; echo "BREW_OK"; fi'
+      },
+      {
+        label: 'Verify',
+        cmd: 'eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null; brew --version && echo "BREW_OK"',
         verify: true,
-        pass: /Homebrew/i,
-        passMsg: 'Nice — Homebrew is already here. Skipping ahead to Node.js.',
-        failMsg: 'Not installed yet — no problem, run the install command below. Takes about 1-2 minutes.',
-        skipOnPass: true
-      },
-      {
-        label: 'Install Homebrew',
-        info: 'This takes 1-2 minutes. Let it finish completely.',
-        cmd: '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
-      },
-      {
-        label: 'Add Homebrew to PATH',
-        info: '<b>Critical</b> — without this, brew won\'t be found in new terminals.',
-        cmd: 'echo \'eval "$(/opt/homebrew/bin/brew shellenv)"\' >> ~/.zprofile\neval "$(/opt/homebrew/bin/brew shellenv)"'
-      },
-      {
-        label: 'Verify Homebrew',
-        cmd: 'brew --version && echo "BREW_VERIFIED"',
-        verify: true,
-        pass: /Homebrew/i,
-        failMsg: 'brew not found. Did you run the PATH step above? Try opening a NEW terminal tab and running the verify again.',
+        pass: /BREW_OK/,
+        failMsg: 'Hmm, brew isn\'t showing up yet. Try opening a new terminal tab and verifying again — the PATH update needs a fresh shell.',
         passMsg: 'Homebrew is locked and loaded. One more prerequisite — Node.js — then the wizard handles everything else.'
       }
     ]
@@ -193,25 +183,17 @@ const STEPS = [
     desc: 'Required for the setup wizard, Claude Code, and all CLI tools.',
     subs: [
       {
-        label: 'Check if already installed',
-        cmd: 'node -v 2>&1 && echo "NODE_OK" || echo "NODE_MISSING"',
-        verify: true,
-        pass: /^v(1[89]|2\d|[3-9]\d)/m,
-        passMsg: 'Node.js is already installed. Skipping straight to the wizard — you\'re almost there.',
-        failMsg: 'Not found or too old — install via Homebrew below. Quick one.',
-        skipOnPass: true
+        label: 'Check & Install',
+        info: 'Checks for Node.js and installs via Homebrew if missing.',
+        cmd: 'if command -v node >/dev/null 2>&1; then echo "Node.js already installed"; node -v; npm -v; echo "NODE_OK"; else echo "Installing Node.js via Homebrew..."; brew install node; echo "Installed:"; node -v; npm -v; echo "NODE_OK"; fi'
       },
       {
-        label: 'Install Node.js',
-        cmd: 'brew install node'
-      },
-      {
-        label: 'Verify Node.js',
-        cmd: 'node -v && npm -v && echo "NODE_VERIFIED"',
+        label: 'Verify',
+        cmd: 'node -v && npm -v && echo "NODE_OK"',
         verify: true,
-        pass: /^v(1[89]|2\d|[3-9]\d)/m,
-        failMsg: 'Node.js not detected. Try: brew install node — then verify again.',
-        passMsg: 'Node.js and npm are ready. That\'s all the prerequisites done. The setup wizard takes it from here — SSH keys, CLI tools, Claude Code, shell config, everything.'
+        pass: /NODE_OK/,
+        failMsg: 'Node.js isn\'t showing up yet. If Homebrew just installed it, try opening a new terminal tab and verifying again.',
+        passMsg: 'Node.js and npm are ready. That\'s all the prerequisites — the setup wizard takes it from here.'
       }
     ]
   },
@@ -496,13 +478,23 @@ function cmdRun(idx) {
     fullCmd = 'OUTPUT=$( ' + entry.cmd + ' 2>&1 ); echo "$OUTPUT"; echo "$OUTPUT" | pbcopy; echo ""; echo "  ✓ Output copied to clipboard — paste it back in the browser."';
   }
 
-  // Mark Run done
+  // Mark Run as in-progress
   const runBtn = document.getElementById('run-' + idx);
-  if (runBtn) { runBtn.classList.remove('ready'); runBtn.classList.add('done'); }
+  if (runBtn) {
+    runBtn.classList.remove('ready');
+    runBtn.classList.add('done');
+    runBtn.innerHTML = '<span class="chk"></span> Running in Terminal...';
+  }
 
   // Enable Verify if it exists
   const vfyBtn = document.getElementById('vfy-' + idx);
-  if (vfyBtn) { vfyBtn.classList.remove('disabled'); vfyBtn.classList.add('ready'); }
+  if (vfyBtn) {
+    vfyBtn.classList.remove('disabled');
+    vfyBtn.classList.add('ready');
+    // Add chase marquee to the verify button's parent substep
+    const substep = vfyBtn.closest('.substep') || vfyBtn.closest('.cmd-wrap');
+    if (substep) substep.classList.add('chase');
+  }
 
   // Show terminal helper modal
   showTerminalHelp(fullCmd, entry.isVerify);
