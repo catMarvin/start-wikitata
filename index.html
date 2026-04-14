@@ -384,6 +384,7 @@ function showTerminalHelp(cmd, isVerify) {
     <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:32px 28px;max-width:460px;width:90%;text-align:center">
       <div style="font-size:36px;margin-bottom:16px">⌘</div>
       <h2 style="font-size:18px;margin-bottom:8px;color:var(--tx)">Command copied to clipboard</h2>
+      <div style="background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-family:var(--m);font-size:11px;color:var(--grn);text-align:left;max-height:60px;overflow-y:auto;word-break:break-all;line-height:1.4">${cmd.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
       <p style="font-size:13px;color:var(--tx2);margin-bottom:20px;line-height:1.5">Open <b>Terminal</b> and paste with <b>⌘V</b></p>
 
       <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:20px">
