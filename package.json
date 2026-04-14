@@ -1,6 +1,6 @@
 {
   "name": "@wikitata/start",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "wikiTaTa developer onboarding — setup wizard + terminal server",
   "license": "MIT",
   "author": "Todd Lamothe",
