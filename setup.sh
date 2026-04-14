@@ -20,7 +20,7 @@ ARROW="${C}→${RST}"
 BAR="${D}═══════════════════════════════════════════════════════════════${RST}"
 
 STEP=0
-TOTAL=7
+TOTAL=8
 ERRORS=0
 SKIPPED=0
 
@@ -222,7 +222,101 @@ fi
 wait_for_enter
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 6: Clone wikiTaTa + Configure Claude Code
+# STEP 6: SSH Key for GitHub
+# ═══════════════════════════════════════════════════════════════════════════════
+
+step_header "SSH Key for GitHub" "Required to clone the private wikiTaTa repo"
+
+SSH_KEY="$HOME/.ssh/id_ed25519"
+
+if [ -f "$SSH_KEY" ]; then
+  ok "SSH key already exists"
+  dim "$(ls -la $SSH_KEY)"
+  blank
+
+  info "Testing GitHub connection..."
+  SSH_OUT=$(ssh -T git@github.com 2>&1 || true)
+  if echo "$SSH_OUT" | grep -qi "successfully authenticated"; then
+    ok "GitHub SSH connection verified!"
+    dim "$SSH_OUT"
+    dim ""
+    dim "Moving on to the next step..."
+    sleep 1.5
+  else
+    warn "SSH key exists but GitHub didn't recognize it."
+    dim "$SSH_OUT"
+    blank
+    echo -e "  ${Y}Your public key needs to be added to GitHub.${RST}"
+    echo -e "  ${Y}Here it is — copy this entire line:${RST}"
+    blank
+    echo -e "  ${G}$(cat ${SSH_KEY}.pub)${RST}"
+    blank
+    info "Go to: https://github.com/settings/keys"
+    info "Click 'New SSH Key', paste the key above, and save."
+    blank
+    read -p "  Press Enter after you've added the key to GitHub... " _unused
+    blank
+
+    SSH_OUT2=$(ssh -T git@github.com 2>&1 || true)
+    if echo "$SSH_OUT2" | grep -qi "successfully authenticated"; then
+      ok "GitHub SSH connection verified!"
+    else
+      fail "Still not connecting. Ask the wikiTaTa team for help."
+      dim "$SSH_OUT2"
+    fi
+    wait_for_enter
+  fi
+else
+  info "No SSH key found — let's create one."
+  blank
+
+  GIT_EMAIL="${WT_GIT_EMAIL:-}"
+  if [ -z "$GIT_EMAIL" ]; then
+    read -p "  Your email (for the SSH key): " GIT_EMAIL
+    blank
+  fi
+
+  ssh-keygen -t ed25519 -C "$GIT_EMAIL" -f "$SSH_KEY" -N ""
+  blank
+
+  if [ -f "$SSH_KEY" ]; then
+    ok "SSH key generated!"
+    blank
+
+    eval "$(ssh-agent -s)" >/dev/null 2>&1
+    ssh-add "$SSH_KEY" 2>/dev/null
+
+    echo -e "  ${Y}${BD}Now add this key to GitHub.${RST}"
+    echo -e "  ${Y}Copy the entire line below:${RST}"
+    blank
+    echo -e "  ${G}$(cat ${SSH_KEY}.pub)${RST}"
+    blank
+    cat "${SSH_KEY}.pub" | pbcopy 2>/dev/null && dim "(Also copied to clipboard)"
+    blank
+    info "Go to: https://github.com/settings/keys"
+    info "Click 'New SSH Key', paste, and save."
+    blank
+    read -p "  Press Enter after you've added the key to GitHub... " _unused
+    blank
+
+    info "Testing GitHub connection..."
+    SSH_OUT=$(ssh -T git@github.com 2>&1 || true)
+    if echo "$SSH_OUT" | grep -qi "successfully authenticated"; then
+      ok "GitHub SSH connection verified!"
+    else
+      warn "GitHub didn't recognize the key yet."
+      dim "$SSH_OUT"
+      info "Double-check you pasted the key at github.com/settings/keys"
+      info "You can try again later — the clone step will tell us."
+    fi
+  else
+    fail "SSH key generation failed"
+  fi
+  wait_for_enter
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 7: Clone wikiTaTa + Configure Claude Code
 # ═══════════════════════════════════════════════════════════════════════════════
 
 step_header "wikiTaTa Repo + Claude Config" "Clone the private repo and configure Claude Code"
@@ -339,7 +433,7 @@ ok "CLAUDE.md"
 wait_for_enter
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 7: Shell Tools + Environment
+# STEP 8: Shell Tools + Environment
 # ═══════════════════════════════════════════════════════════════════════════════
 
 step_header "Shell Tools" "wt_autolink, wt_start, wt_end + environment variables"
