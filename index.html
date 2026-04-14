@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>wikiTaTa — Get Started</title>
+<style>
+:root{--bg:#0a0a0f;--sf:#111118;--bd:#252530;--tx:#e0e0e8;--tx2:#777788;--acc:#6c8aff;--grn:#4ade80;--code:#0d0d16;--f:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;--m:'SF Mono','Fira Code',Consolas,monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;display:flex;align-items:center;justify-content:center}
+.c{max-width:520px;text-align:center;padding:40px 24px}
+h1{font-size:32px;font-weight:600;letter-spacing:-.5px;margin-bottom:8px}
+.sub{color:var(--tx2);font-size:15px;margin-bottom:48px;line-height:1.5}
+.label{font-size:12px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;font-weight:600}
+
+.cmd-box{background:var(--code);border:2px solid var(--bd);border-radius:12px;padding:20px 24px;font-family:var(--m);font-size:15px;color:var(--grn);margin-bottom:16px;cursor:pointer;transition:border-color .2s;user-select:all;line-height:1.6}
+.cmd-box:hover{border-color:var(--acc)}
+
+.copy-btn{background:var(--acc);color:#fff;border:none;padding:12px 32px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:var(--f);transition:all .15s;margin-bottom:32px}
+.copy-btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.copy-btn:active{transform:translateY(0)}
+.copy-btn.done{background:var(--grn)}
+
+.steps{text-align:left;margin-top:40px;border-top:1px solid var(--bd);padding-top:32px}
+.steps h2{font-size:14px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;font-weight:600}
+.step{display:flex;gap:12px;margin-bottom:16px;align-items:flex-start}
+.step .n{width:24px;height:24px;border-radius:50%;background:var(--bd);color:var(--tx2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.step .t{font-size:13px;color:var(--tx2);line-height:1.5;padding-top:2px}
+.step .t b{color:var(--tx);font-weight:500}
+
+.alt{margin-top:40px;border-top:1px solid var(--bd);padding-top:24px}
+.alt p{font-size:12px;color:var(--tx2);line-height:1.6}
+.alt code{background:var(--code);padding:2px 6px;border-radius:4px;font-family:var(--m);font-size:11px}
+
+.badge{display:inline-block;margin-top:32px;padding:4px 12px;border-radius:20px;font-size:10px;color:var(--tx2);border:1px solid var(--bd);letter-spacing:.5px}
+</style>
+</head>
+<body>
+<div class="c">
+  <h1>wikiTaTa</h1>
+  <p class="sub">Developer setup for your Mac.<br>One command. Everything configured.</p>
+
+  <div class="label">Paste this in Terminal</div>
+  <div class="cmd-box" id="cmd" onclick="copyCmd()">git clone https://github.com/catMarvin/start-wikitata.git ~/start-wikitata && cd ~/start-wikitata && npm install && node server.js</div>
+  <button class="copy-btn" id="cpbtn" onclick="copyCmd()">Copy to Clipboard</button>
+
+  <div class="steps">
+    <h2>What happens next</h2>
+    <div class="step"><div class="n">1</div><div class="t"><b>Browser opens automatically</b> with the setup wizard at localhost:3737</div></div>
+    <div class="step"><div class="n">2</div><div class="t"><b>Choose your level</b> — full setup, dev tools only, or just Claude Code config</div></div>
+    <div class="step"><div class="n">3</div><div class="t"><b>Enter your invite code</b> — Todd gave you a username and code</div></div>
+    <div class="step"><div class="n">4</div><div class="t"><b>Run each step</b> — test, install, or skip. Built-in terminal runs commands for you</div></div>
+    <div class="step"><div class="n">5</div><div class="t"><b>Type <code>claude</code></b> — Claude Code knows who you are. Say <code>start session sop</code></div></div>
+  </div>
+
+  <div class="alt">
+    <p><b>Already cloned?</b> Just run: <code>cd ~/start-wikitata && node server.js</code></p>
+    <p style="margin-top:8px"><b>Need Node.js first?</b> Visit <a href="https://nodejs.org" style="color:var(--acc)">nodejs.org</a> or run: <code>curl -fsSL https://fnm.vercel.app/install | bash</code></p>
+  </div>
+
+  <div class="badge">Requires macOS + Node.js 18+</div>
+</div>
+
+<script>
+function copyCmd(){
+  const text = document.getElementById('cmd').textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn = document.getElementById('cpbtn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('done');
+    setTimeout(()=>{ btn.textContent = 'Copy to Clipboard'; btn.classList.remove('done'); }, 3000);
+  });
+}
+</script>
+</body>
+</html>
