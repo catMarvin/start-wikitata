@@ -5,563 +5,329 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>wikiTaTa — Get Started</title>
 <style>
-:root{--bg:#0a0a0f;--sf:#111118;--sf2:#18181f;--bd:#252530;--tx:#e0e0e8;--tx2:#777788;--acc:#6c8aff;--grn:#4ade80;--grn-d:rgba(74,222,128,.12);--gold:#d4a24e;--gold-d:rgba(212,162,78,.1);--red:#f87171;--red-d:rgba(248,113,113,.12);--code:#0d0d16;--f:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;--m:'SF Mono','Fira Code',Consolas,monospace}
+:root{--bg:#0a0a0f;--sf:#111118;--sf2:#18181f;--bd:#252530;--tx:#e0e0e8;--tx2:#777788;--acc:#6c8aff;--grn:#4ade80;--grn-d:rgba(74,222,128,.12);--gold:#d4a24e;--red:#f87171;--red-d:rgba(248,113,113,.12);--code:#0d0d16;--f:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;--m:'SF Mono','Fira Code',Consolas,monospace}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;display:flex;justify-content:center;padding:40px 16px 80px}
-.c{max-width:580px;width:100%}
-h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px;text-align:center}
-.sub{color:var(--tx2);font-size:14px;margin-bottom:32px;line-height:1.5;text-align:center}
+body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;display:flex;align-items:center;justify-content:center}
+.c{max-width:480px;width:100%;padding:40px 24px;text-align:center}
+h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px}
+.sub{color:var(--tx2);font-size:14px;margin-bottom:36px;line-height:1.5}
+.ver{position:fixed;top:12px;right:16px;font-size:11px;font-weight:600;color:var(--acc);font-family:var(--m);letter-spacing:.5px}
 
-/* Progress */
-.prog{display:flex;gap:3px;margin-bottom:20px}
-.prog .s{flex:1;height:3px;border-radius:2px;background:var(--bd);transition:background .4s}
-.prog .s.done{background:var(--grn)} .prog .s.cur{background:var(--acc)}
+/* Gate form */
+.gate{text-align:left;margin-bottom:24px}
+.gate label{display:block;font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.gate input{width:100%;background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:11px 14px;color:var(--tx);font-size:14px;font-family:var(--f);outline:none;margin-bottom:16px}
+.gate input:focus{border-color:var(--acc)}
+.gate input::placeholder{color:rgba(255,255,255,.2)}
 
-/* Steps */
-.step{background:var(--sf);border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;overflow:hidden;transition:all .4s ease}
-.step.locked{display:none}
-.step.cur{border-color:var(--acc)}
-.step.done{border-color:rgba(74,222,128,.25);opacity:.8;cursor:pointer;transition:all .4s ease}
-.step.done:hover{opacity:.95}
+.gate-btn{width:100%;background:var(--acc);color:#fff;border:none;padding:13px 0;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:var(--f);transition:all .15s}
+.gate-btn:hover{filter:brightness(1.1)} .gate-btn:disabled{opacity:.4;cursor:default;filter:none}
 
-.sh{display:flex;align-items:center;gap:12px;padding:14px 18px}
-.sn{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;background:var(--bd);color:var(--tx2);transition:all .3s}
-.step.cur .sn{background:var(--acc);color:#fff}
-.step.done .sn{background:var(--grn);color:#000;font-weight:700}
-.st{font-size:14px;font-weight:500;transition:color .3s}
-.step.done .st{color:var(--tx2)}
+.gate-msg{margin-top:12px;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;display:none}
+.gate-msg.err{display:block;background:var(--red-d);color:var(--red)}
+.gate-msg.ok{display:block;background:var(--grn-d);color:var(--grn)}
 
-.sb{display:none;padding:4px 18px 18px 56px}
-.step.cur .sb{display:block}
-.step.done .sb{display:none}
-.step.done.expanded .sb{display:block}
-.sb p{font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:10px}
-.sb p b{color:var(--tx);font-weight:500}
+/* Welcome (post-auth) */
+.welcome{display:none;animation:fadeUp .4s ease}
+.welcome h2{font-size:20px;font-weight:600;margin-bottom:6px}
+.welcome .hi{color:var(--grn);font-size:15px;margin-bottom:24px}
 
-/* Sub-steps */
-.substep{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--bd)}
-.substep:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
-.substep-label{font-size:10px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
-
-/* Commands */
-.cmd-wrap{margin-bottom:12px}
-.cmd{background:var(--code);border:1px solid var(--bd);border-radius:8px 8px 0 0;padding:11px 14px;font-family:var(--m);font-size:12px;color:var(--grn);line-height:1.5;white-space:pre-wrap;word-break:break-all}
-.cmd-actions{display:flex;gap:0;border:1px solid var(--bd);border-top:none;border-radius:0 0 8px 8px;overflow:hidden;background:var(--sf2)}
-.cmd-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 0;font-size:11px;font-weight:600;font-family:var(--f);cursor:pointer;border:none;background:transparent;color:var(--tx2);transition:all .25s;border-right:1px solid var(--bd);position:relative}
+/* Command block */
+.cmd-wrap{text-align:left;margin:20px 0}
+.cmd{background:var(--code);border:1px solid var(--bd);border-radius:8px 8px 0 0;padding:12px 14px;font-family:var(--m);font-size:12px;color:var(--grn);line-height:1.5;white-space:pre-wrap;word-break:break-all}
+.cmd-bar{display:flex;border:1px solid var(--bd);border-top:none;border-radius:0 0 8px 8px;overflow:hidden}
+.cmd-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0;font-size:12px;font-weight:600;font-family:var(--f);cursor:pointer;border:none;background:var(--sf2);color:var(--tx2);transition:all .25s;border-right:1px solid var(--bd)}
 .cmd-btn:last-child{border-right:none}
-.cmd-btn:hover:not(.disabled):not(.done){background:rgba(255,255,255,.04);color:var(--tx)}
-.cmd-btn.disabled{opacity:.25;pointer-events:none;cursor:default}
-.cmd-btn.active{color:var(--tx);opacity:1;pointer-events:auto}
-.cmd-btn.done{color:var(--grn);opacity:.6}
-.cmd-btn.done:hover{opacity:.8}
-.cmd-btn.ready{color:#000;background:var(--grn);opacity:1;pointer-events:auto;font-weight:700}
+.cmd-btn:hover:not(.disabled){background:rgba(255,255,255,.04);color:var(--tx)}
+.cmd-btn.disabled{opacity:.25;pointer-events:none}
+.cmd-btn.done{color:var(--grn);opacity:.7}
+.cmd-btn.ready{color:#000;background:var(--grn);font-weight:700}
 .cmd-btn.ready:hover{filter:brightness(1.1)}
 
-/* Checkbox circle */
-.chk{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid currentColor;opacity:.5;transition:all .25s;position:relative;flex-shrink:0}
-.cmd-btn.active .chk{opacity:.7}
+/* Checkbox */
+.chk{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;opacity:.5;position:relative;flex-shrink:0;transition:all .25s}
 .cmd-btn.done .chk{opacity:1;border-color:var(--grn);background:var(--grn)}
-.cmd-btn.done .chk::after{content:'✓';position:absolute;top:-3px;left:1px;font-size:10px;font-weight:700;color:#000;animation:popIn .3s cubic-bezier(.34,1.56,.64,1)}
-.cmd-btn.ready .chk{border-color:#000;opacity:.7;background:transparent}
-.cmd-btn.ready .chk::after{content:''}
-@keyframes popIn{from{transform:scale(0) rotate(-45deg)}to{transform:scale(1) rotate(0)}}
+.cmd-btn.done .chk::after{content:'✓';position:absolute;top:-3px;left:1px;font-size:10px;font-weight:700;color:#000;animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{from{transform:scale(0) rotate(-45deg)}to{transform:scale(1) rotate(0)}}
 
-/* Chase marquee — animated border highlight */
-.chase{position:relative;overflow:visible}
-.chase::before{
-  content:'';position:absolute;inset:-2px;border-radius:10px;z-index:1;pointer-events:none;
-  background:conic-gradient(from var(--chase-angle,0deg),var(--grn),transparent 40%,transparent 60%,var(--grn));
-  mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask-composite:exclude;-webkit-mask-composite:xor;
-  padding:2px;animation:chaseRotate 2s linear infinite;
-}
-@keyframes chaseRotate{to{--chase-angle:360deg}}
-@property --chase-angle{syntax:'<angle>';initial-value:0deg;inherits:false}
+/* Steps preview */
+.steps-preview{text-align:left;margin:24px 0;padding:20px;background:var(--sf);border:1px solid var(--bd);border-radius:10px}
+.steps-preview h3{font-size:12px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;font-weight:600}
+.sp-item{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.sp-item:last-child{margin-bottom:0}
+.sp-num{width:20px;height:20px;border-radius:50%;background:var(--bd);color:var(--tx2);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.sp-txt{font-size:12px;color:var(--tx2)}
 
-/* Pulse fallback for browsers without @property */
-@supports not (background:conic-gradient(from 0deg,red,blue)){
-  .chase::before{background:var(--grn);opacity:.3;animation:chasePulse 1.5s ease-in-out infinite}
-  @keyframes chasePulse{0%,100%{opacity:.15}50%{opacity:.4}}
-}
+/* Waiting state */
+.waiting{display:none;text-align:center;padding:32px 0;animation:fadeUp .4s ease}
+.waiting .spinner{width:32px;height:32px;border:3px solid var(--bd);border-top-color:var(--grn);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-/* Verify area */
-.verify{margin-top:10px;margin-bottom:10px}
-.verify label{font-size:10px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px}
-.verify textarea{width:100%;height:54px;font-size:11px;font-family:var(--m);background:var(--code);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:8px;resize:vertical}
-.verify textarea:focus{border-color:var(--acc);outline:none}
-.verify-btn{background:var(--acc);color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;font-family:var(--f);margin-top:6px}
-.verify-btn:hover{filter:brightness(1.1)}
+/* Complete */
+.complete{display:none;text-align:center;padding:32px 0;animation:fadeUp .4s ease}
+.complete h2{font-size:22px;color:var(--grn);margin-bottom:8px}
 
-/* Result badges */
-.result{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:500;margin-top:8px}
-.result.pass{background:var(--grn-d);color:var(--grn)}
-.result.fail{background:var(--red-d);color:var(--red)}
-.result.hint{background:var(--gold-d);color:var(--gold)}
+/* Helpers */
+.note{font-size:11px;color:var(--tx2);line-height:1.5;margin-top:16px}
+.note b{color:var(--tx)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
-/* Notes */
-.note{font-size:11px;color:var(--tx2);line-height:1.5;padding:8px 12px;background:var(--sf2);border-radius:6px;margin-bottom:8px;border-left:3px solid var(--bd)}
-.note.warn{border-left-color:var(--gold)} .note.info{border-left-color:var(--acc)} .note.err{border-left-color:var(--red)}
-
-/* Open Terminal helper */
-.term-prompt{display:none;margin:10px 0;padding:16px 18px;background:linear-gradient(135deg,var(--sf2),var(--sf));border:1px solid var(--bd);border-radius:10px;text-align:center;animation:fadeSlide .3s}
-.term-prompt.show{display:block}
-.term-prompt p{font-size:12px;color:var(--tx2);margin-bottom:12px}
-.term-prompt p b{color:var(--tx)}
-.term-open{background:var(--grn);color:#000;border:none;padding:10px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--f);transition:all .15s}
-.term-open:hover{filter:brightness(1.1);transform:translateY(-1px)}
-.term-open:active{transform:translateY(0)}
+/* Terminal modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:32px 28px;max-width:460px;width:90%;text-align:center}
 .keys{display:flex;align-items:center;justify-content:center;gap:6px;margin:10px 0}
-.key{background:var(--bd);color:var(--tx);padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;font-family:var(--f);border:1px solid rgba(255,255,255,.06);border-bottom-width:3px;min-width:28px;text-align:center;display:inline-block}
-.or-divider{font-size:10px;color:var(--tx2);margin:8px 0}
-@keyframes fadeSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-
-/* Finish */
-.fin{text-align:center;padding:32px 0;display:none}
-.fin h2{font-size:20px;color:var(--grn);margin-bottom:6px}
-.fin p{color:var(--tx2);font-size:13px;line-height:1.6}
+.key{background:var(--bd);color:var(--tx);padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.06);border-bottom-width:3px;min-width:28px;text-align:center}
 </style>
 </head>
 <body>
-<div style="position:fixed;top:12px;right:16px;font-size:11px;font-weight:600;color:var(--acc);font-family:var(--m);z-index:100;letter-spacing:.5px">v0.2.0</div>
+<div class="ver">v0.3.0</div>
+
 <div class="c">
   <h1>wikiTaTa</h1>
-  <p class="sub">Developer setup for your Mac.<br>Each step verifies before you move on.</p>
+  <p class="sub">Developer setup for your Mac.</p>
 
-  <div class="prog" id="prog"></div>
-  <div id="steps"></div>
+  <!-- ═══ GATE ═══ -->
+  <div id="gate-view">
+    <div class="gate">
+      <label>Username</label>
+      <input type="text" id="inp-user" placeholder="assigned by wikiTaTa team" autocomplete="off" spellcheck="false">
+      <label>Invite Code</label>
+      <input type="text" id="inp-code" placeholder="from your invite" autocomplete="off" spellcheck="false">
+      <button class="gate-btn" id="gate-btn" onclick="verifyInvite()">Verify &amp; Continue</button>
+      <div class="gate-msg" id="gate-msg"></div>
+    </div>
+    <p class="note">Part of our early test group? You should have received a username and invite code. If not, reach out to the wikiTaTa team.</p>
+  </div>
 
-  <div class="fin" id="fin">
-    <h2>Wizard is running</h2>
-    <p>Switch to the browser tab at <b>localhost:3737</b><br>The setup wizard handles everything from here.</p>
+  <!-- ═══ WELCOME (post-auth) ═══ -->
+  <div class="welcome" id="welcome-view">
+    <h2>Welcome to wikiTaTa, <span id="display-name"></span></h2>
+    <p class="hi">You're in. Let's get you set up.</p>
+
+    <div id="role-picker" style="text-align:left;margin-bottom:24px">
+      <p style="font-size:13px;color:var(--tx2);margin-bottom:12px">What best describes you? <span style="font-size:10px;color:var(--tx2)">(you can change this later)</span></p>
+      <div style="display:flex;flex-direction:column;gap:6px" id="roles">
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--sf);border:1px solid var(--bd);border-radius:8px;cursor:pointer;transition:all .2s" onclick="pickRole(this,'developer')">
+          <input type="radio" name="role" value="developer" style="accent-color:var(--acc)">
+          <div><div style="font-size:13px;font-weight:500">Developer</div><div style="font-size:11px;color:var(--tx2)">I write code. Set me up with everything.</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--sf);border:1px solid var(--bd);border-radius:8px;cursor:pointer;transition:all .2s" onclick="pickRole(this,'ai-user')">
+          <input type="radio" name="role" value="ai-user" style="accent-color:var(--acc)">
+          <div><div style="font-size:13px;font-weight:500">AI-First User</div><div style="font-size:11px;color:var(--tx2)">I work with Claude. Get me connected.</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--sf);border:1px solid var(--bd);border-radius:8px;cursor:pointer;transition:all .2s" onclick="pickRole(this,'explorer')">
+          <input type="radio" name="role" value="explorer" style="accent-color:var(--acc)">
+          <div><div style="font-size:13px;font-weight:500">Just Exploring</div><div style="font-size:11px;color:var(--tx2)">Show me what wikiTaTa does.</div></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="steps-preview">
+      <h3>What this does</h3>
+      <div class="sp-item"><div class="sp-num">1</div><div class="sp-txt">Xcode Command Line Tools (Git)</div></div>
+      <div class="sp-item"><div class="sp-num">2</div><div class="sp-txt">Homebrew (package manager)</div></div>
+      <div class="sp-item"><div class="sp-num">3</div><div class="sp-txt">Node.js + npm</div></div>
+      <div class="sp-item"><div class="sp-num">4</div><div class="sp-txt">Claude Code, Supabase CLI, Vercel CLI</div></div>
+      <div class="sp-item"><div class="sp-num">5</div><div class="sp-txt">Clone wikiTaTa repo + configure Claude</div></div>
+      <div class="sp-item"><div class="sp-num">6</div><div class="sp-txt">Shell tools + environment</div></div>
+    </div>
+
+    <p style="font-size:13px;color:var(--tx2);margin-bottom:16px">One script handles everything. Already-installed tools are detected and skipped.</p>
+
+    <div class="cmd-wrap">
+      <div class="cmd" id="setup-cmd"></div>
+      <div class="cmd-bar">
+        <button class="cmd-btn active" id="btn-copy" onclick="doCopy()"><span class="chk"></span> Copy</button>
+        <button class="cmd-btn disabled" id="btn-run" onclick="doRun()"><span class="chk"></span> Run in Terminal</button>
+      </div>
+    </div>
+
+    <p class="note">The script takes 2-10 minutes depending on what needs installing.<br>It checks, installs, and verifies every step — you just watch it go.</p>
+  </div>
+
+  <!-- ═══ WAITING ═══ -->
+  <div class="waiting" id="waiting-view">
+    <div class="spinner"></div>
+    <h2 style="font-size:18px;margin-bottom:6px">Setup is running in Terminal</h2>
+    <p style="color:var(--tx2);font-size:13px;line-height:1.6">The script will open this page when it's done.<br>You can switch to Terminal to watch the progress.</p>
+  </div>
+
+  <!-- ═══ COMPLETE ═══ -->
+  <div class="complete" id="complete-view">
+    <h2>You're all set</h2>
+    <p style="color:var(--tx2);font-size:14px;line-height:1.6;margin-bottom:20px">
+      Open a new terminal and type <code style="background:var(--code);padding:2px 6px;border-radius:4px;font-family:var(--m)">claude</code><br>
+      Then say <code style="background:var(--code);padding:2px 6px;border-radius:4px;font-family:var(--m)">start session sop</code>
+    </p>
+    <p style="color:var(--tx2);font-size:12px">Claude will know who you are.</p>
+  </div>
+</div>
+
+<!-- Terminal modal -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div style="font-size:36px;margin-bottom:16px">⌘</div>
+    <h2 style="font-size:18px;margin-bottom:8px">Command copied — open Terminal</h2>
+    <div id="modal-cmd" style="background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-family:var(--m);font-size:10px;color:var(--grn);text-align:left;max-height:50px;overflow-y:auto;word-break:break-all;line-height:1.4"></div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px">
+      <div style="text-align:center">
+        <div class="keys"><span class="key">⌘</span><span style="color:var(--tx2)">+</span><span class="key">Space</span></div>
+        <div style="font-size:10px;color:var(--tx2)">Spotlight</div>
+      </div>
+      <div style="color:var(--tx2)">→</div>
+      <div style="text-align:center">
+        <div style="background:var(--code);padding:5px 12px;border-radius:6px;font-family:var(--m);font-size:12px;margin-bottom:3px">Terminal</div>
+        <div style="font-size:10px;color:var(--tx2)">Type + Enter</div>
+      </div>
+      <div style="color:var(--tx2)">→</div>
+      <div style="text-align:center">
+        <div class="keys"><span class="key">⌘</span><span style="color:var(--tx2)">+</span><span class="key">V</span></div>
+        <div style="font-size:10px;color:var(--tx2)">Paste + Enter</div>
+      </div>
+    </div>
+    <button onclick="closeModal()" style="background:var(--acc);color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--f)">Got it</button>
   </div>
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-// STEP DEFINITIONS
-// ═══════════════════════════════════════════════════════════════
-const STEPS = [
-  {
-    id: 'xcode', title: 'Xcode Command Line Tools',
-    desc: 'Installs Git and build essentials.',
-    subs: [
-      {
-        label: 'Check & Install',
-        info: 'This checks if Xcode is installed. If not, a system popup appears — click <b>Install</b> and wait 2-5 minutes. Then run the verify.',
-        cmd: 'if xcode-select -p >/dev/null 2>&1; then echo "Already installed"; git --version; echo "XCODE_OK"; else echo "Installing Xcode Command Line Tools..."; xcode-select --install; echo "XCODE_INSTALLING — click Install in the popup, wait for it to finish, then verify below"; fi'
-      },
-      {
-        label: 'Verify',
-        cmd: 'xcode-select -p && git --version && echo "XCODE_OK"',
-        verify: true,
-        pass: /XCODE_OK/,
-        failMsg: 'Xcode is still installing — wait for the popup to finish, then verify again.',
-        passMsg: 'Excellent — Xcode is installed and Git is ready. Next up: Homebrew, then Node.js, then the wizard takes over.'
-      }
-    ]
-  },
-  {
-    id: 'brew', title: 'Homebrew',
-    desc: 'macOS package manager. Everything else installs cleanly through this.',
-    subs: [
-      {
-        label: 'Check & Install',
-        info: 'This checks for Homebrew and installs it if missing. Takes 1-2 minutes if installing.',
-        cmd: 'if command -v brew >/dev/null 2>&1; then echo "Homebrew already installed"; brew --version; echo "BREW_OK"; else echo "Installing Homebrew..."; /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; echo \'eval "$(/opt/homebrew/bin/brew shellenv)"\' >> ~/.zprofile; eval "$(/opt/homebrew/bin/brew shellenv)"; echo "BREW_OK"; fi'
-      },
-      {
-        label: 'Verify',
-        cmd: 'eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null; brew --version && echo "BREW_OK"',
-        verify: true,
-        pass: /BREW_OK/,
-        failMsg: 'Hmm, brew isn\'t showing up yet. Try opening a new terminal tab and verifying again — the PATH update needs a fresh shell.',
-        passMsg: 'Homebrew is locked and loaded. One more prerequisite — Node.js — then the wizard handles everything else.'
-      }
-    ]
-  },
-  {
-    id: 'node', title: 'Node.js',
-    desc: 'Required for the setup wizard, Claude Code, and all CLI tools.',
-    subs: [
-      {
-        label: 'Check & Install',
-        info: 'Checks for Node.js and installs via Homebrew if missing.',
-        cmd: 'if command -v node >/dev/null 2>&1; then echo "Node.js already installed"; node -v; npm -v; echo "NODE_OK"; else echo "Installing Node.js via Homebrew..."; brew install node; echo "Installed:"; node -v; npm -v; echo "NODE_OK"; fi'
-      },
-      {
-        label: 'Verify',
-        cmd: 'node -v && npm -v && echo "NODE_OK"',
-        verify: true,
-        pass: /NODE_OK/,
-        failMsg: 'Node.js isn\'t showing up yet. If Homebrew just installed it, try opening a new terminal tab and verifying again.',
-        passMsg: 'Node.js and npm are ready. That\'s all the prerequisites — the setup wizard takes it from here.'
-      }
-    ]
-  },
-  {
-    id: 'wizard', title: 'Launch Setup Wizard',
-    desc: 'Clones the repo, installs dependencies, and opens the full wizard.',
-    subs: [
-      {
-        label: 'Run this command',
-        info: 'Browser will open automatically to <b>localhost:3737</b>. Have your <b>username</b> and <b>invite code</b> ready — wikiTaTa will have provided these to you as part of our early test group.',
-        cmd: 'if ! command -v node >/dev/null 2>&1; then echo "\\n  Error: Node.js not found. Complete step 3 first."; exit 1; fi\nif ! command -v npm >/dev/null 2>&1; then echo "\\n  Error: npm not found. Reinstall Node.js (brew install node)."; exit 1; fi\nif ! command -v git >/dev/null 2>&1; then echo "\\n  Error: Git not found. Complete step 1 first."; exit 1; fi\ngit clone https://github.com/catMarvin/start-wikitata.git ~/start-wikitata 2>/dev/null\ncd ~/start-wikitata && git pull || { echo "\\n  Error: Could not access repo. Check internet connection."; exit 1; }\nnpm install || { echo "\\n  Error: npm install failed. Try: rm -rf node_modules && npm install"; exit 1; }\nnode server.js',
-        isFinal: true
-      }
-    ]
-  }
-];
+const LOBBY_URL = 'https://mjdkuxfddfihqkknfxrl.supabase.co';
+const LOBBY_KEY = 'sb_publishable_tQGS3ws4EztkCVxulXP4Ng_dfmoW-iY';
 
-// ═══════════════════════════════════════════════════════════════
-// STATE + PERSISTENCE
-// ═══════════════════════════════════════════════════════════════
-const STORAGE_KEY = 'wt-setup-progress';
+let verifiedUser = null;
+let profile = null;
 
-function loadProgress() {
+// ── Gate ─────────────────────────────────────────────────────────────────────
+
+document.getElementById('inp-user').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('inp-code').focus(); });
+document.getElementById('inp-code').addEventListener('keydown', e => { if (e.key === 'Enter') verifyInvite(); });
+
+async function verifyInvite() {
+  const user = document.getElementById('inp-user').value.trim().toLowerCase();
+  const code = document.getElementById('inp-code').value.trim();
+  const msg = document.getElementById('gate-msg');
+  const btn = document.getElementById('gate-btn');
+
+  if (!user || !code) { msg.className = 'gate-msg err'; msg.textContent = 'Both fields required.'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Verifying...';
+
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
-  } catch(_) {}
-  return { curStep: 0, stepResults: {}, startedAt: new Date().toISOString() };
-}
-
-function saveProgress() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      curStep, stepResults, startedAt: _progress.startedAt,
-      lastUpdated: new Date().toISOString()
-    }));
-  } catch(_) {}
-}
-
-function resetProgress() {
-  localStorage.removeItem(STORAGE_KEY);
-  curStep = 0;
-  stepResults = {};
-  render();
-}
-
-let _progress = loadProgress();
-let curStep = _progress.curStep || 0;
-let stepResults = _progress.stepResults || {};
-let cmdRegistry = [];
-
-// ═══════════════════════════════════════════════════════════════
-// RENDER
-// ═══════════════════════════════════════════════════════════════
-function render() {
-  cmdRegistry = [];
-  // Progress bar
-  const pr = document.getElementById('prog');
-  pr.innerHTML = STEPS.map((_, i) =>
-    `<div class="s${i < curStep ? ' done' : i === curStep ? ' cur' : ''}"></div>`
-  ).join('');
-
-  // Steps
-  const ct = document.getElementById('steps');
-  ct.innerHTML = STEPS.map((s, i) => {
-    const cls = i < curStep ? 'done' : i === curStep ? 'cur' : 'locked';
-    let h = `<div class="step ${cls}" data-step="${i}" onclick="toggleDone(this,${i})">`;
-    const isDone = i < curStep;
-    h += `<div class="sh">`;
-    if (isDone) h += `<div style="width:20px;height:20px;border-radius:50%;background:var(--grn);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:4px"><span style="color:#000;font-size:12px;font-weight:700">✓</span></div>`;
-    h += `<div class="sn">${i+1}</div><div class="st">${s.title}</div>`;
-    h += `</div>`;
-    h += `<div class="sb">`;
-    h += `<p>${s.desc}</p>`;
-
-    s.subs.forEach((sub, si) => {
-      const subId = `${s.id}-${si}`;
-      h += `<div class="substep">`;
-      h += `<div class="substep-label">${sub.label}</div>`;
-      if (sub.info) h += `<p>${sub.info}</p>`;
-      if (sub.cmd) h += cmdHtml(sub.cmd, { verify: !!sub.verify, label: `${s.id}-${sub.label.replace(/\s+/g,'-').toLowerCase()}` });
-
-      if (sub.verify) {
-        h += `<div class="verify">`;
-        h += `<label>Paste terminal output here</label>`;
-        h += `<textarea id="v-${subId}" placeholder="Paste output..."></textarea>`;
-        h += `<button class="verify-btn" onclick="checkVerify('${s.id}',${si})">Verify</button>`;
-        h += `</div>`;
-        h += `<div id="r-${subId}"></div>`;
-      }
-
-      if (sub.isFinal) {
-        h += `<div style="margin-top:12px"><button class="verify-btn" onclick="advanceStep(${i})" style="background:var(--grn)">Wizard is running — I see localhost:3737</button></div>`;
-      }
-
-      h += `</div>`;
+    const res = await fetch(LOBBY_URL + '/rest/v1/rpc/verify_invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': LOBBY_KEY, 'Authorization': 'Bearer ' + LOBBY_KEY },
+      body: JSON.stringify({ p_username: user, p_code: code })
     });
+    const data = await res.json();
 
-    // Next button (only if step has verify subs that all passed, or no verify at all)
-    const hasVerify = s.subs.some(sub => sub.verify);
-    const allPassed = s.subs.filter(sub => sub.verify).every((sub, si) => stepResults[`${s.id}-${si}`] === 'pass');
-    if (hasVerify && allPassed) {
-      h += `<div style="margin-top:8px"><button class="verify-btn" onclick="advanceStep(${i})" style="background:var(--grn);padding:9px 24px;font-size:12px">Next Step</button></div>`;
+    if (data.ok) {
+      verifiedUser = data.username;
+      profile = data.profile || {};
+
+      msg.className = 'gate-msg ok';
+      msg.textContent = 'Verified. Welcome, ' + (profile.display_name || verifiedUser) + '.';
+
+      // Save to localStorage
+      localStorage.setItem('wt-verified', JSON.stringify({ user: verifiedUser, profile }));
+
+      setTimeout(showWelcome, 800);
+    } else {
+      msg.className = 'gate-msg err';
+      msg.textContent = data.error || 'Invalid credentials.';
+      btn.disabled = false;
+      btn.textContent = 'Verify & Continue';
     }
-
-    h += `</div></div>`;
-    return h;
-  }).join('');
-}
-
-function cmdHtml(text, opts) {
-  const esc = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const isVerify = opts?.verify || false;
-  const label = opts?.label || 'step';
-  const idx = cmdRegistry.length;
-  cmdRegistry.push({ cmd: text, isVerify, label });
-  let h = '<div class="cmd-wrap">';
-  h += '<div class="cmd">' + esc + '</div>';
-  h += '<div class="cmd-actions">';
-  h += '<button class="cmd-btn active" id="cp-' + idx + '" onclick="cmdCopy(' + idx + ')"><span class="chk"></span> Copy</button>';
-  h += '<button class="cmd-btn disabled" id="run-' + idx + '" onclick="cmdRun(' + idx + ')"><span class="chk"></span> Run in Terminal</button>';
-  if (isVerify) {
-    h += '<button class="cmd-btn disabled" id="vfy-' + idx + '" onclick="cmdVerifyPrompt(' + idx + ')"><span class="chk"></span> Verify</button>';
+  } catch (err) {
+    msg.className = 'gate-msg err';
+    msg.textContent = 'Connection error — check your internet.';
+    btn.disabled = false;
+    btn.textContent = 'Verify & Continue';
   }
-  h += '</div></div>';
-  return h;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// VERIFY
-// ═══════════════════════════════════════════════════════════════
-function checkVerify(stepId, subIdx) {
-  const subId = `${stepId}-${subIdx}`;
-  const step = STEPS.find(s => s.id === stepId);
-  const sub = step.subs[subIdx];
-  const ta = document.getElementById('v-' + subId);
-  const res = document.getElementById('r-' + subId);
-  if (!ta || !res) return;
+function showWelcome() {
+  document.getElementById('gate-view').style.display = 'none';
+  const wv = document.getElementById('welcome-view');
+  wv.style.display = 'block';
+  document.getElementById('display-name').textContent = profile.display_name || verifiedUser;
 
-  const output = ta.value.trim();
-  if (!output) {
-    res.innerHTML = '<div class="result fail">Paste the terminal output first</div>';
+  // Build the setup command with username baked in
+  const cmd = 'git clone https://github.com/catMarvin/start-wikitata.git ~/start-wikitata 2>/dev/null; cd ~/start-wikitata && git pull && bash setup.sh ' + verifiedUser;
+  document.getElementById('setup-cmd').textContent = cmd;
+}
+
+// ── Copy / Run ──────────────────────────────────────────────────────────────
+
+let selectedRole = null;
+function pickRole(el, role) {
+  selectedRole = role;
+  document.querySelectorAll('#roles label').forEach(l => l.style.borderColor = 'var(--bd)');
+  el.style.borderColor = 'var(--acc)';
+}
+
+function doCopy() {
+  const cmd = document.getElementById('setup-cmd').textContent;
+  navigator.clipboard.writeText(cmd).then(() => {
+    const btn = document.getElementById('btn-copy');
+    btn.classList.remove('active');
+    btn.classList.add('done');
+
+    const run = document.getElementById('btn-run');
+    run.classList.remove('disabled');
+    run.classList.add('ready');
+  });
+}
+
+function doRun() {
+  const cmd = document.getElementById('setup-cmd').textContent;
+  document.getElementById('modal-cmd').textContent = cmd;
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+
+  // Mark run as done
+  const run = document.getElementById('btn-run');
+  run.classList.remove('ready');
+  run.classList.add('done');
+  run.innerHTML = '<span class="chk"></span> Running...';
+
+  // Show waiting state
+  document.getElementById('welcome-view').style.display = 'none';
+  document.getElementById('waiting-view').style.display = 'block';
+
+  // Poll for completion (setup.sh will open this URL with ?done=1)
+  pollForCompletion();
+}
+
+function pollForCompletion() {
+  if (new URLSearchParams(window.location.search).get('done')) {
+    document.getElementById('waiting-view').style.display = 'none';
+    document.getElementById('complete-view').style.display = 'block';
     return;
   }
-
-  if (sub.pass.test(output)) {
-    stepResults[subId] = 'pass';
-    saveProgress();
-    res.innerHTML = `<div class="result pass">&#10003; ${sub.passMsg || 'Passed'}</div>`;
-
-    // If skipOnPass, auto-advance to next step
-    if (sub.skipOnPass) {
-      setTimeout(() => advanceStep(STEPS.indexOf(step)), 800);
-    } else {
-      // Re-render to show Next button if all verifies passed
-      setTimeout(render, 100);
-    }
-  } else {
-    stepResults[subId] = 'fail';
-    res.innerHTML = `<div class="result fail">&#10007; ${sub.failMsg || 'Verification failed'}</div>`;
-    if (sub.failHint) {
-      res.innerHTML += `<div class="result hint" style="margin-top:4px">${sub.failHint}</div>`;
-    }
-  }
+  setTimeout(pollForCompletion, 2000);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ADVANCE
-// ═══════════════════════════════════════════════════════════════
-function advanceStep(idx) {
-  curStep = idx + 1;
-  saveProgress();
-  if (curStep >= STEPS.length) {
-    render();
-    document.getElementById('fin').style.display = 'block';
-    setTimeout(() => document.getElementById('fin').scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
-  } else {
-    render();
-    const next = document.querySelector('.step.cur');
-    if (next) setTimeout(() => next.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
-  }
+// ── Resume ──────────────────────────────────────────────────────────────────
+
+// Check if already verified (returning user)
+const saved = localStorage.getItem('wt-verified');
+if (saved) {
+  try {
+    const d = JSON.parse(saved);
+    verifiedUser = d.user;
+    profile = d.profile || {};
+    showWelcome();
+  } catch(_) {}
 }
 
-// ═══════════════════════════════════════════════════════════════
-// TOGGLE COMPLETED STEPS
-// ═══════════════════════════════════════════════════════════════
-function toggleDone(el, idx) {
-  if (idx >= curStep) return; // only toggle completed steps
-  el.classList.toggle('expanded');
-  event.stopPropagation();
-}
-
-// ═══════════════════════════════════════════════════════════════
-// RUN IN TERMINAL (.command file)
-// ═══════════════════════════════════════════════════════════════
-function runInTerminal(idx) {
-  const entry = cmdRegistry[idx];
-  if (!entry) return;
-
-  let fullCmd = entry.cmd;
-  if (entry.isVerify) {
-    fullCmd = 'OUTPUT=$( ' + entry.cmd + ' 2>&1 ); echo "$OUTPUT"; echo "$OUTPUT" | pbcopy; echo ""; echo "  ✓ Output copied to clipboard — paste it back in the browser."';
-  }
-
-  // Command was already copied by cmdCopy — just show the modal
-  showTerminalHelp(fullCmd, entry.isVerify);
-}
-
-function showTerminalHelp(cmd, isVerify) {
-  // Find or create the help overlay
-  let overlay = document.getElementById('term-help');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'term-help';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;animation:fadeSlide .2s';
-    document.body.appendChild(overlay);
-  }
-
-  overlay.innerHTML = `
-    <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:32px 28px;max-width:460px;width:90%;text-align:center">
-      <div style="font-size:36px;margin-bottom:16px">⌘</div>
-      <h2 style="font-size:18px;margin-bottom:8px;color:var(--tx)">Command copied to clipboard</h2>
-      <div style="background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-family:var(--m);font-size:11px;color:var(--grn);text-align:left;max-height:60px;overflow-y:auto;word-break:break-all;line-height:1.4">${cmd.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
-      <p style="font-size:13px;color:var(--tx2);margin-bottom:20px;line-height:1.5">Open <b>Terminal</b> and paste with <b>⌘V</b></p>
-
-      <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:20px">
-        <div style="text-align:center">
-          <div class="keys" style="margin:0 0 4px">
-            <span class="key">⌘</span><span style="color:var(--tx2)">+</span><span class="key">Space</span>
-          </div>
-          <div style="font-size:10px;color:var(--tx2)">Open Spotlight</div>
-        </div>
-        <div style="color:var(--tx2);font-size:16px">→</div>
-        <div style="text-align:center">
-          <div style="background:var(--code);padding:6px 14px;border-radius:6px;font-family:var(--m);font-size:13px;margin-bottom:4px">Terminal</div>
-          <div style="font-size:10px;color:var(--tx2)">Type + Enter</div>
-        </div>
-        <div style="color:var(--tx2);font-size:16px">→</div>
-        <div style="text-align:center">
-          <div class="keys" style="margin:0 0 4px">
-            <span class="key">⌘</span><span style="color:var(--tx2)">+</span><span class="key">V</span>
-          </div>
-          <div style="font-size:10px;color:var(--tx2)">Paste + Enter</div>
-        </div>
-      </div>
-
-      ${isVerify ? '<p style="font-size:12px;color:var(--grn);margin-bottom:16px">Output will be auto-copied to clipboard.<br>Come back here and <b>⌘V</b> into the verify box.</p>' : ''}
-
-      <button onclick="document.getElementById('term-help').remove()" style="background:var(--acc);color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--f)">Got it</button>
-    </div>`;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// COPY + ENABLE RUN
-// ═══════════════════════════════════════════════════════════════
-function cmdCopy(idx) {
-  const entry = cmdRegistry[idx];
-  if (!entry) return;
-
-  let fullCmd = entry.cmd;
-  if (entry.isVerify) {
-    fullCmd = 'OUTPUT=$( ' + entry.cmd + ' 2>&1 ); echo "$OUTPUT"; echo "$OUTPUT" | pbcopy; echo ""; echo "  ✓ Output copied to clipboard — paste it back in the browser."';
-  }
-
-  navigator.clipboard.writeText(fullCmd).then(function() {
-    // Mark Copy done
-    const cpBtn = document.getElementById('cp-' + idx);
-    if (cpBtn) { cpBtn.classList.remove('active'); cpBtn.classList.add('done'); }
-
-    // Enable Run in Terminal as the next active step
-    const runBtn = document.getElementById('run-' + idx);
-    if (runBtn) { runBtn.classList.remove('disabled'); runBtn.classList.add('ready'); }
-  }).catch(function() {});
-}
-
-function cmdRun(idx) {
-  const entry = cmdRegistry[idx];
-  if (!entry) return;
-
-  let fullCmd = entry.cmd;
-  if (entry.isVerify) {
-    fullCmd = 'OUTPUT=$( ' + entry.cmd + ' 2>&1 ); echo "$OUTPUT"; echo "$OUTPUT" | pbcopy; echo ""; echo "  ✓ Output copied to clipboard — paste it back in the browser."';
-  }
-
-  // Mark Run as in-progress
-  const runBtn = document.getElementById('run-' + idx);
-  if (runBtn) {
-    runBtn.classList.remove('ready');
-    runBtn.classList.add('done');
-    runBtn.innerHTML = '<span class="chk"></span> Running in Terminal...';
-  }
-
-  // Enable Verify if it exists
-  const vfyBtn = document.getElementById('vfy-' + idx);
-  if (vfyBtn) {
-    vfyBtn.classList.remove('disabled');
-    vfyBtn.classList.add('ready');
-    // Add chase marquee to the verify button's parent substep
-    const substep = vfyBtn.closest('.substep') || vfyBtn.closest('.cmd-wrap');
-    if (substep) substep.classList.add('chase');
-  }
-
-  // Show terminal helper modal
-  showTerminalHelp(fullCmd, entry.isVerify);
-}
-
-function cmdVerifyPrompt(idx) {
-  // Mark verify as active (user clicked it)
-  const vfyBtn = document.getElementById('vfy-' + idx);
-  if (vfyBtn) { vfyBtn.classList.remove('ready'); vfyBtn.classList.add('done'); }
-
-  // Find and focus the verify textarea for this command's parent substep
-  // Scroll to the verify area
-  const verifyAreas = document.querySelectorAll('.verify textarea');
-  for (const ta of verifyAreas) {
-    const rect = ta.getBoundingClientRect();
-    if (rect.top > 0) { ta.focus(); ta.scrollIntoView({ behavior: 'smooth', block: 'center' }); break; }
-  }
-}
-
-// Legacy copy for inline use
-function cc(el) {
-  const text = el.textContent.replace(/Copy$/, '').replace(/Copied$/, '').trim();
-  navigator.clipboard.writeText(text);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════════
-
-// Controlled window size — if opened directly, offer to relaunch in a sized popup
-if (!window.opener && !sessionStorage.getItem('wt-launched')) {
-  const hasProgress = curStep > 0 && curStep < STEPS.length;
-  const stepName = hasProgress ? STEPS[curStep]?.title : '';
-  document.querySelector('.c').innerHTML = `
-    <div style="text-align:center;padding:100px 20px">
-      <h1 style="margin-bottom:12px">wikiTaTa</h1>
-      ${hasProgress
-        ? `<p style="color:var(--tx2);font-size:15px;margin-bottom:8px">Welcome back.</p>
-           <p style="color:var(--tx);font-size:14px;margin-bottom:32px">You completed <b>${curStep}/${STEPS.length}</b> steps. Next up: <b>${stepName}</b></p>
-           <button onclick="launchSetup()" style="background:var(--grn);color:#000;border:none;padding:14px 40px;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;font-family:var(--f);margin-bottom:12px">Continue</button><br>
-           <button onclick="resetAndLaunch()" style="background:transparent;color:var(--tx2);border:1px solid var(--bd);padding:10px 28px;border-radius:10px;font-size:13px;cursor:pointer;font-family:var(--f);margin-top:8px">Start Over</button>
-           <p style="color:var(--tx2);font-size:10px;margin-top:12px">Starting over is safe — already-installed tools will be detected and skipped automatically.</p>`
-        : `<p style="color:var(--tx2);font-size:15px;margin-bottom:40px">Developer setup for your Mac.</p>
-           <button onclick="launchSetup()" style="background:var(--acc);color:#fff;border:none;padding:14px 40px;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;font-family:var(--f)">Start Setup</button>
-           <p style="color:var(--tx2);font-size:11px;margin-top:16px">Opens in a focused window</p>`
-      }
-    </div>`;
-} else {
-  render();
-}
-
-function resetAndLaunch() {
-  resetProgress();
-  launchSetup();
-}
-
-function launchSetup() {
-  const w = 820, h = 900;
-  const left = Math.round((screen.width - w) / 2);
-  const top = Math.round((screen.height - h) / 2);
-  const win = window.open(location.href, 'wt-setup',
-    'width='+w+',height='+h+',left='+left+',top='+top+',resizable=yes,scrollbars=yes');
-  if (win) {
-    sessionStorage.setItem('wt-launched', '1');
-    win.sessionStorage.setItem('wt-launched', '1');
-    document.querySelector('.c').innerHTML = '<div style="text-align:center;padding:120px 20px"><p style="color:var(--tx2)">Setup opened in a new window.<br>You can close this tab.</p></div>';
-  }
+// Check if returning from completed setup
+if (new URLSearchParams(window.location.search).get('done')) {
+  document.getElementById('gate-view').style.display = 'none';
+  document.getElementById('complete-view').style.display = 'block';
 }
 </script>
 </body>
