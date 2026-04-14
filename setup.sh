@@ -239,12 +239,18 @@ wait_for_enter
 step_header "SSH Key for GitHub" "Required to clone the private wikiTaTa repo"
 
 SSH_KEY=""
-for candidate in "$HOME/.ssh/id_ed25519" "$HOME/.ssh/id_rsa" "$HOME/.ssh/github-"*; do
-  if [ -f "$candidate" ] && [[ "$candidate" != *.pub ]]; then
-    SSH_KEY="$candidate"
-    break
-  fi
-done
+if [ -d "$HOME/.ssh" ]; then
+  for candidate in "$HOME/.ssh/"*; do
+    [ -f "$candidate" ] || continue
+    case "$candidate" in
+      *.pub|*/known_hosts*|*/config|*/authorized_keys|*/environment) continue ;;
+    esac
+    if head -1 "$candidate" 2>/dev/null | grep -qi "PRIVATE KEY"; then
+      SSH_KEY="$candidate"
+      break
+    fi
+  done
+fi
 
 if [ -n "$SSH_KEY" ]; then
   ok "SSH key found: $(basename $SSH_KEY)"
