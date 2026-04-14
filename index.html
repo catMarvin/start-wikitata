@@ -294,6 +294,29 @@ function closeModal() {
   run.classList.add('done');
   run.innerHTML = '<span class="chk"></span> Running...';
 
+  // Open a small persistent window with the command (in case clipboard gets cleared)
+  const cmd = document.getElementById('setup-cmd').textContent;
+  const miniHtml = `<!DOCTYPE html><html><head><title>wikiTaTa — Your Command</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,system-ui,sans-serif;background:#0a0a0f;color:#e0e0e8;padding:20px;min-height:100vh;display:flex;flex-direction:column;justify-content:center}
+h3{font-size:13px;color:#777;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
+.cmd{background:#0d0d16;border:1px solid #252530;border-radius:8px;padding:12px;font-family:'SF Mono',Consolas,monospace;font-size:11px;color:#4ade80;line-height:1.5;word-break:break-all;margin-bottom:12px;cursor:pointer;user-select:all}
+.cmd:hover{border-color:#6c8aff}
+button{width:100%;background:#6c8aff;color:#fff;border:none;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+button:hover{filter:brightness(1.1)}
+.ok{background:rgba(74,222,128,.12);color:#4ade80}
+p{font-size:11px;color:#555;margin-top:12px;text-align:center;line-height:1.5}</style></head>
+<body><h3>Your setup command</h3>
+<div class="cmd" onclick="navigator.clipboard.writeText(this.textContent);document.getElementById('b').className='ok';document.getElementById('b').textContent='Copied!';setTimeout(()=>{document.getElementById('b').className='';document.getElementById('b').textContent='Copy Again'},2000)">${cmd.replace(/</g,'&lt;')}</div>
+<button id="b" onclick="navigator.clipboard.writeText(document.querySelector('.cmd').textContent);this.className='ok';this.textContent='Copied!';setTimeout(()=>{this.className='';this.textContent='Copy Again'},2000)">Copy Again</button>
+<p>Keep this window open while setup runs.<br>Click anytime to re-copy if needed.</p></body></html>`;
+
+  const blob = new Blob([miniHtml], {type: 'text/html'});
+  const url = URL.createObjectURL(blob);
+  const w = 420, h = 300;
+  const left = Math.round(screen.width - w - 40);
+  const top = Math.round(screen.height - h - 100);
+  window.open(url, 'wt-cmd', 'width='+w+',height='+h+',left='+left+',top='+top+',resizable=yes');
+
   // Show waiting state
   document.getElementById('welcome-view').style.display = 'none';
   document.getElementById('waiting-view').style.display = 'block';
