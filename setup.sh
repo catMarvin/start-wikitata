@@ -238,18 +238,34 @@ wait_for_enter
 
 step_header "SSH Key for GitHub" "Required to clone the private wikiTaTa repo"
 
-SSH_KEY="$HOME/.ssh/id_ed25519"
+SSH_KEY=""
+for candidate in "$HOME/.ssh/id_ed25519" "$HOME/.ssh/id_rsa" "$HOME/.ssh/github-"*; do
+  if [ -f "$candidate" ] && [[ "$candidate" != *.pub ]]; then
+    SSH_KEY="$candidate"
+    break
+  fi
+done
 
-if [ -f "$SSH_KEY" ]; then
-  ok "SSH key already exists"
+if [ -n "$SSH_KEY" ]; then
+  ok "SSH key found: $(basename $SSH_KEY)"
   dim "$(ls -la $SSH_KEY)"
   blank
 
   info "Testing GitHub connection..."
-  SSH_OUT=$(ssh -T git@github.com 2>&1 || true)
-  if echo "$SSH_OUT" | grep -qi "successfully authenticated"; then
-    ok "GitHub SSH connection verified!"
-    dim "$SSH_OUT"
+  echo -e "  ${D}(trying git@github.com and any SSH aliases)${RST}"
+  SSH_VERIFIED=false
+
+  for gh_host in github.com $(grep -i 'Host github' "$HOME/.ssh/config" 2>/dev/null | awk '{print $2}'); do
+    SSH_OUT=$(ssh -T "git@${gh_host}" 2>&1 || true)
+    if echo "$SSH_OUT" | grep -qi "successfully authenticated"; then
+      ok "GitHub SSH verified via $gh_host"
+      dim "$SSH_OUT"
+      SSH_VERIFIED=true
+      break
+    fi
+  done
+
+  if [ "$SSH_VERIFIED" = true ]; then
     dim ""
     dim "Moving on to the next step..."
     sleep 1.5
@@ -346,13 +362,21 @@ if [ -d "$HOME_DIR/git/wikitata" ]; then
   fi
 else
   info "Cloning the wikiTaTa repo — this is where your tools live."
-  if git clone git@github.com:catMarvin/wikitata.git "$HOME_DIR/git/wikitata" 2>/dev/null; then
-    ok "Cloned via SSH"
-  elif git clone https://github.com/catMarvin/wikitata.git "$HOME_DIR/git/wikitata" 2>/dev/null; then
-    ok "Cloned via HTTPS"
-    warn "SSH clone failed — HTTPS works but you'll need SSH for push access later"
-  else
-    fail "Could not clone — check your SSH key is added to GitHub"
+  CLONED=false
+  for gh_host in $(grep -i 'Host github' "$HOME/.ssh/config" 2>/dev/null | awk '{print $2}') github.com; do
+    if git clone "git@${gh_host}:catMarvin/wikitata.git" "$HOME_DIR/git/wikitata" 2>/dev/null; then
+      ok "Cloned via SSH ($gh_host)"
+      CLONED=true
+      break
+    fi
+  done
+  if [ "$CLONED" = false ]; then
+    if git clone https://github.com/catMarvin/wikitata.git "$HOME_DIR/git/wikitata" 2>/dev/null; then
+      ok "Cloned via HTTPS"
+      warn "SSH clone failed — HTTPS works but you'll need SSH for push access later"
+    else
+      fail "Could not clone — check your SSH key is added to GitHub"
+    fi
   fi
 fi
 
