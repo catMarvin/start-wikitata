@@ -66,6 +66,19 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px;text-al
 .note{font-size:11px;color:var(--tx2);line-height:1.5;padding:8px 12px;background:var(--sf2);border-radius:6px;margin-bottom:8px;border-left:3px solid var(--bd)}
 .note.warn{border-left-color:var(--gold)} .note.info{border-left-color:var(--acc)} .note.err{border-left-color:var(--red)}
 
+/* Open Terminal helper */
+.term-prompt{display:none;margin:10px 0;padding:16px 18px;background:linear-gradient(135deg,var(--sf2),var(--sf));border:1px solid var(--bd);border-radius:10px;text-align:center;animation:fadeSlide .3s}
+.term-prompt.show{display:block}
+.term-prompt p{font-size:12px;color:var(--tx2);margin-bottom:12px}
+.term-prompt p b{color:var(--tx)}
+.term-open{background:var(--grn);color:#000;border:none;padding:10px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--f);transition:all .15s}
+.term-open:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.term-open:active{transform:translateY(0)}
+.keys{display:flex;align-items:center;justify-content:center;gap:6px;margin:10px 0}
+.key{background:var(--bd);color:var(--tx);padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;font-family:var(--f);border:1px solid rgba(255,255,255,.06);border-bottom-width:3px;min-width:28px;text-align:center;display:inline-block}
+.or-divider{font-size:10px;color:var(--tx2);margin:8px 0}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+
 /* Finish */
 .fin{text-align:center;padding:32px 0;display:none}
 .fin h2{font-size:20px;color:var(--grn);margin-bottom:6px}
@@ -224,7 +237,7 @@ function render() {
       h += `<div class="substep">`;
       h += `<div class="substep-label">${sub.label}</div>`;
       if (sub.info) h += `<p>${sub.info}</p>`;
-      if (sub.cmd) h += cmdHtml(sub.cmd);
+      if (sub.cmd) h += cmdHtml(sub.cmd, { verify: !!sub.verify, label: `${s.id}-${sub.label.replace(/\s+/g,'-').toLowerCase()}` });
 
       if (sub.verify) {
         h += `<div class="verify">`;
@@ -254,9 +267,18 @@ function render() {
   }).join('');
 }
 
-function cmdHtml(text) {
+function cmdHtml(text, opts) {
   const esc = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return `<div class="cmd" onclick="cc(this)">${esc}<span class="cp">Copy</span></div>`;
+  const isVerify = opts?.verify;
+  const label = opts?.label || 'step';
+  let h = `<div class="cmd">${esc}<span class="cp" onclick="cc(this.parentElement)">Copy</span></div>`;
+  h += `<div style="display:flex;gap:8px;margin-bottom:8px">`;
+  h += `<button class="term-open" onclick="runInTerminal(\`${text.replace(/`/g,'\\`').replace(/\\/g,'\\\\')}\`, ${isVerify}, '${label}')" style="font-size:11px;padding:6px 14px">Run in Terminal</button>`;
+  if (isVerify) {
+    h += `<span style="font-size:10px;color:var(--tx2);align-self:center">Opens Terminal → runs command → copies output to clipboard</span>`;
+  }
+  h += `</div>`;
+  return h;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -310,6 +332,60 @@ function advanceStep(idx) {
     const next = document.querySelector('.step.cur');
     if (next) setTimeout(() => next.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RUN IN TERMINAL (.command file)
+// ═══════════════════════════════════════════════════════════════
+function runInTerminal(cmd, isVerify, label) {
+  let script = '#!/bin/bash\n';
+  script += '# wikiTaTa Setup — ' + label + '\n';
+  script += 'echo ""\n';
+  script += 'echo "  ╔══════════════════════════════════════════════╗"\n';
+  script += 'echo "  ║  wikiTaTa Setup                              ║"\n';
+  script += 'echo "  ╚══════════════════════════════════════════════╝"\n';
+  script += 'echo ""\n';
+  script += 'echo "  Running: ' + label.replace(/"/g, '\\"') + '"\n';
+  script += 'echo "  ────────────────────────────────────────────"\n';
+  script += 'echo ""\n';
+
+  if (isVerify) {
+    // Capture output, display it, copy to clipboard
+    script += 'OUTPUT=$( ' + cmd + ' 2>&1 )\n';
+    script += 'echo "$OUTPUT"\n';
+    script += 'echo ""\n';
+    script += 'echo "$OUTPUT" | pbcopy\n';
+    script += 'echo "  ────────────────────────────────────────────"\n';
+    script += 'echo "  ✓ Output copied to clipboard."\n';
+    script += 'echo "  → Go back to the browser and click Paste (⌘V) into the verify box."\n';
+    script += 'echo ""\n';
+  } else {
+    // Just run it
+    script += cmd + '\n';
+    script += 'EXIT_CODE=$?\n';
+    script += 'echo ""\n';
+    script += 'echo "  ────────────────────────────────────────────"\n';
+    script += 'if [ $EXIT_CODE -eq 0 ]; then\n';
+    script += '  echo "  ✓ Done."\n';
+    script += 'else\n';
+    script += '  echo "  ✗ Something went wrong (exit code $EXIT_CODE)."\n';
+    script += '  echo "  Check the output above for details."\n';
+    script += 'fi\n';
+    script += 'echo ""\n';
+  }
+
+  script += 'read -p "  Press Enter to close this window..." _\n';
+
+  // Create blob and download as .command file
+  const blob = new Blob([script], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'wikitata-' + label + '.command';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ═══════════════════════════════════════════════════════════════
