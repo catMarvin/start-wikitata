@@ -18,22 +18,25 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px;text-al
 .prog .s.done{background:var(--grn)} .prog .s.cur{background:var(--acc)}
 
 /* Steps */
-.step{background:var(--sf);border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;overflow:hidden;transition:all .3s}
-.step.locked{opacity:.25;pointer-events:none}
+.step{background:var(--sf);border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;overflow:hidden;transition:all .4s ease}
+.step.locked{display:none}
 .step.cur{border-color:var(--acc)}
-.step.done{border-color:var(--grn-d);opacity:.5}
-.step.done:hover{opacity:.65}
+.step.done{border-color:var(--grn-d);opacity:.45;cursor:pointer;transition:all .4s ease}
+.step.done:hover{opacity:.7}
 
 .sh{display:flex;align-items:center;gap:12px;padding:14px 18px}
-.sn{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;background:var(--bd);color:var(--tx2)}
+.sn{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;background:var(--bd);color:var(--tx2);transition:all .3s}
 .step.cur .sn{background:var(--acc);color:#fff}
 .step.done .sn{background:var(--grn-d);color:var(--grn)}
-.st{font-size:14px;font-weight:500}
-.sc{margin-left:auto;color:var(--grn);font-size:16px;display:none}
+.st{font-size:14px;font-weight:500;transition:color .3s}
+.step.done .st{color:var(--tx2)}
+.sc{margin-left:auto;color:var(--grn);font-size:18px;display:none;transition:all .3s}
 .step.done .sc{display:block}
 
 .sb{display:none;padding:4px 18px 18px 56px}
 .step.cur .sb{display:block}
+.step.done .sb{display:none}
+.step.done.expanded .sb{display:block}
 .sb p{font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:10px}
 .sb p b{color:var(--tx);font-weight:500}
 
@@ -229,8 +232,8 @@ function render() {
   const ct = document.getElementById('steps');
   ct.innerHTML = STEPS.map((s, i) => {
     const cls = i < curStep ? 'done' : i === curStep ? 'cur' : 'locked';
-    let h = `<div class="step ${cls}" data-step="${i}">`;
-    h += `<div class="sh"><div class="sn">${i+1}</div><div class="st">${s.title}</div><div class="sc">&#10003;</div></div>`;
+    let h = `<div class="step ${cls}" data-step="${i}" onclick="toggleDone(this,${i})">`;
+    h += `<div class="sh"><div class="sn">${i < curStep ? '✓' : i+1}</div><div class="st">${s.title}</div><div class="sc">&#10003;</div></div>`;
     h += `<div class="sb">`;
     h += `<p>${s.desc}</p>`;
 
@@ -337,6 +340,15 @@ function advanceStep(idx) {
     const next = document.querySelector('.step.cur');
     if (next) setTimeout(() => next.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOGGLE COMPLETED STEPS
+// ═══════════════════════════════════════════════════════════════
+function toggleDone(el, idx) {
+  if (idx >= curStep) return; // only toggle completed steps
+  el.classList.toggle('expanded');
+  event.stopPropagation();
 }
 
 // ═══════════════════════════════════════════════════════════════
