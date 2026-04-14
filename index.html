@@ -21,8 +21,8 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px;text-al
 .step{background:var(--sf);border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;overflow:hidden;transition:all .4s ease}
 .step.locked{display:none}
 .step.cur{border-color:var(--acc)}
-.step.done{border-color:rgba(74,222,128,.25);opacity:.75;cursor:pointer;transition:all .4s ease}
-.step.done:hover{opacity:.9}
+.step.done{border-color:rgba(74,222,128,.25);opacity:.8;cursor:pointer;transition:all .4s ease}
+.step.done:hover{opacity:.95}
 
 .sh{display:flex;align-items:center;gap:12px;padding:14px 18px}
 .sn{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;background:var(--bd);color:var(--tx2);transition:all .3s}
@@ -30,8 +30,6 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px;text-al
 .step.done .sn{background:var(--grn);color:#000;font-weight:700}
 .st{font-size:14px;font-weight:500;transition:color .3s}
 .step.done .st{color:var(--tx2)}
-.sc{margin-left:auto;color:var(--grn);font-size:18px;display:none;transition:all .3s}
-.step.done .sc{display:block}
 
 .sb{display:none;padding:4px 18px 18px 56px}
 .step.cur .sb{display:block}
@@ -49,19 +47,27 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px;text-al
 .cmd-wrap{margin-bottom:12px}
 .cmd{background:var(--code);border:1px solid var(--bd);border-radius:8px 8px 0 0;padding:11px 14px;font-family:var(--m);font-size:12px;color:var(--grn);line-height:1.5;white-space:pre-wrap;word-break:break-all}
 .cmd-actions{display:flex;gap:0;border:1px solid var(--bd);border-top:none;border-radius:0 0 8px 8px;overflow:hidden;background:var(--sf2)}
-.cmd-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 0;font-size:11px;font-weight:600;font-family:var(--f);cursor:pointer;border:none;background:transparent;color:var(--tx2);transition:all .2s;border-right:1px solid var(--bd)}
+.cmd-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 0;font-size:11px;font-weight:600;font-family:var(--f);cursor:pointer;border:none;background:transparent;color:var(--tx2);transition:all .25s;border-right:1px solid var(--bd);position:relative}
 .cmd-btn:last-child{border-right:none}
-.cmd-btn:hover{background:rgba(255,255,255,.04);color:var(--tx)}
-.cmd-btn.copied{color:var(--grn)}
-.cmd-btn.disabled{opacity:.3;pointer-events:none}
-.cmd-btn.ready{color:var(--grn);background:var(--grn-d);opacity:1;pointer-events:auto}
-.cmd-btn.ready:hover{background:rgba(74,222,128,.18)}
+.cmd-btn:hover:not(.disabled):not(.done){background:rgba(255,255,255,.04);color:var(--tx)}
+.cmd-btn.disabled{opacity:.25;pointer-events:none;cursor:default}
+.cmd-btn.active{color:var(--tx);opacity:1;pointer-events:auto}
+.cmd-btn.done{color:var(--grn);opacity:.6}
+.cmd-btn.done:hover{opacity:.8}
+.cmd-btn.ready{color:#000;background:var(--grn);opacity:1;pointer-events:auto;font-weight:700}
+.cmd-btn.ready:hover{filter:brightness(1.1)}
 
-/* Animated checkbox */
-.chk{display:inline-block;width:15px;height:15px;border-radius:50%;border:2px solid var(--bd);transition:all .25s ease;position:relative;flex-shrink:0}
-.cmd-btn.copied .chk{border-color:var(--grn);background:var(--grn)}
-.cmd-btn.copied .chk::after{content:'✓';position:absolute;top:-3px;left:1px;font-size:11px;font-weight:700;color:#000;animation:popIn .3s cubic-bezier(.34,1.56,.64,1)}
+/* Checkbox circle */
+.chk{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid currentColor;opacity:.5;transition:all .25s;position:relative;flex-shrink:0}
+.cmd-btn.active .chk{opacity:.7}
+.cmd-btn.done .chk{opacity:1;border-color:var(--grn);background:var(--grn)}
+.cmd-btn.done .chk::after{content:'✓';position:absolute;top:-3px;left:1px;font-size:10px;font-weight:700;color:#000;animation:popIn .3s cubic-bezier(.34,1.56,.64,1)}
+.cmd-btn.ready .chk{border-color:#000;opacity:.7;background:transparent}
+.cmd-btn.ready .chk::after{content:''}
 @keyframes popIn{from{transform:scale(0) rotate(-45deg)}to{transform:scale(1) rotate(0)}}
+
+/* Step number in button */
+.cmd-btn .micro{font-size:9px;font-weight:700;opacity:.5;margin-right:2px}
 
 /* Verify area */
 .verify{margin-top:10px;margin-bottom:10px}
@@ -272,7 +278,11 @@ function render() {
   ct.innerHTML = STEPS.map((s, i) => {
     const cls = i < curStep ? 'done' : i === curStep ? 'cur' : 'locked';
     let h = `<div class="step ${cls}" data-step="${i}" onclick="toggleDone(this,${i})">`;
-    h += `<div class="sh"><div class="sn">${i < curStep ? '✓' : i+1}</div><div class="st">${s.title}</div><div class="sc">&#10003;</div></div>`;
+    const isDone = i < curStep;
+    h += `<div class="sh">`;
+    if (isDone) h += `<div style="width:20px;height:20px;border-radius:50%;background:var(--grn);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:4px"><span style="color:#000;font-size:12px;font-weight:700">✓</span></div>`;
+    h += `<div class="sn">${i+1}</div><div class="st">${s.title}</div>`;
+    h += `</div>`;
     h += `<div class="sb">`;
     h += `<p>${s.desc}</p>`;
 
@@ -320,8 +330,11 @@ function cmdHtml(text, opts) {
   let h = '<div class="cmd-wrap">';
   h += '<div class="cmd">' + esc + '</div>';
   h += '<div class="cmd-actions">';
-  h += '<button class="cmd-btn" id="cp-' + idx + '" onclick="cmdCopy(' + idx + ')"><span class="chk"></span> Copy</button>';
-  h += '<button class="cmd-btn disabled" id="run-' + idx + '" onclick="runInTerminal(' + idx + ')">Run in Terminal</button>';
+  h += '<button class="cmd-btn active" id="cp-' + idx + '" onclick="cmdCopy(' + idx + ')"><span class="chk"></span> Copy</button>';
+  h += '<button class="cmd-btn disabled" id="run-' + idx + '" onclick="cmdRun(' + idx + ')"><span class="chk"></span> Run in Terminal</button>';
+  if (isVerify) {
+    h += '<button class="cmd-btn disabled" id="vfy-' + idx + '" onclick="cmdVerifyPrompt(' + idx + ')"><span class="chk"></span> Verify</button>';
+  }
   h += '</div></div>';
   return h;
 }
@@ -463,19 +476,49 @@ function cmdCopy(idx) {
   }
 
   navigator.clipboard.writeText(fullCmd).then(function() {
-    // Animate checkbox
+    // Mark Copy done
     const cpBtn = document.getElementById('cp-' + idx);
-    if (cpBtn) {
-      cpBtn.classList.add('copied');
-      cpBtn.innerHTML = '<span class="chk"></span> Copied';
-    }
-    // Enable Run in Terminal
+    if (cpBtn) { cpBtn.classList.remove('active'); cpBtn.classList.add('done'); }
+
+    // Enable Run in Terminal as the next active step
     const runBtn = document.getElementById('run-' + idx);
-    if (runBtn) {
-      runBtn.classList.remove('disabled');
-      runBtn.classList.add('ready');
-    }
+    if (runBtn) { runBtn.classList.remove('disabled'); runBtn.classList.add('ready'); }
   }).catch(function() {});
+}
+
+function cmdRun(idx) {
+  const entry = cmdRegistry[idx];
+  if (!entry) return;
+
+  let fullCmd = entry.cmd;
+  if (entry.isVerify) {
+    fullCmd = 'OUTPUT=$( ' + entry.cmd + ' 2>&1 ); echo "$OUTPUT"; echo "$OUTPUT" | pbcopy; echo ""; echo "  ✓ Output copied to clipboard — paste it back in the browser."';
+  }
+
+  // Mark Run done
+  const runBtn = document.getElementById('run-' + idx);
+  if (runBtn) { runBtn.classList.remove('ready'); runBtn.classList.add('done'); }
+
+  // Enable Verify if it exists
+  const vfyBtn = document.getElementById('vfy-' + idx);
+  if (vfyBtn) { vfyBtn.classList.remove('disabled'); vfyBtn.classList.add('ready'); }
+
+  // Show terminal helper modal
+  showTerminalHelp(fullCmd, entry.isVerify);
+}
+
+function cmdVerifyPrompt(idx) {
+  // Mark verify as active (user clicked it)
+  const vfyBtn = document.getElementById('vfy-' + idx);
+  if (vfyBtn) { vfyBtn.classList.remove('ready'); vfyBtn.classList.add('done'); }
+
+  // Find and focus the verify textarea for this command's parent substep
+  // Scroll to the verify area
+  const verifyAreas = document.querySelectorAll('.verify textarea');
+  for (const ta of verifyAreas) {
+    const rect = ta.getBoundingClientRect();
+    if (rect.top > 0) { ta.focus(); ta.scrollIntoView({ behavior: 'smooth', block: 'center' }); break; }
+  }
 }
 
 // Legacy copy for inline use
