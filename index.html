@@ -212,11 +212,13 @@ const STEPS = [
 // ═══════════════════════════════════════════════════════════════
 let curStep = 0;
 let stepResults = {}; // stepId -> 'done'
+let cmdRegistry = []; // stored commands for Run in Terminal buttons
 
 // ═══════════════════════════════════════════════════════════════
 // RENDER
 // ═══════════════════════════════════════════════════════════════
 function render() {
+  cmdRegistry = [];
   // Progress bar
   const pr = document.getElementById('prog');
   pr.innerHTML = STEPS.map((_, i) =>
@@ -269,16 +271,18 @@ function render() {
 
 function cmdHtml(text, opts) {
   const esc = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const isVerify = opts?.verify;
+  const isVerify = opts?.verify || false;
   const label = opts?.label || 'step';
-  let h = `<div class="cmd">${esc}<span class="cp" onclick="cc(this.parentElement)">Copy</span></div>`;
-  h += `<div style="display:flex;gap:8px;margin-bottom:8px">`;
-  h += `<button class="term-open" onclick="runInTerminal(\`${text.replace(/`/g,'\\`').replace(/\\/g,'\\\\')}\`, ${isVerify}, '${label}')" style="font-size:11px;padding:6px 14px">Run in Terminal</button>`;
+  // Store command in registry, reference by index
+  const idx = cmdRegistry.length;
+  cmdRegistry.push({ cmd: text, isVerify, label });
+  let h = '<div class="cmd">' + esc + '<span class="cp" onclick="cc(this.parentElement)">Copy</span></div>';
+  h += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">';
+  h += '<button class="term-open" onclick="runInTerminal(' + idx + ')" style="font-size:11px;padding:6px 14px">Run in Terminal</button>';
   if (isVerify) {
-    h += `<span style="font-size:10px;color:var(--tx2);align-self:center">Opens Terminal → runs command → copies output to clipboard</span>`;
+    h += '<span style="font-size:10px;color:var(--tx2)">Copies command → open Terminal → paste → output auto-copied back</span>';
   }
-  h += `</div>`;
-  h += `<p style="font-size:10px;color:var(--tx2);margin-bottom:8px">First time? macOS may say <b>"can\'t be opened"</b> — right-click the downloaded file → <b>Open</b>, then click <b>Open</b> again. This only happens once.</p>`;
+  h += '</div>';
   return h;
 }
 
@@ -338,28 +342,19 @@ function advanceStep(idx) {
 // ═══════════════════════════════════════════════════════════════
 // RUN IN TERMINAL (.command file)
 // ═══════════════════════════════════════════════════════════════
-function runInTerminal(cmd, isVerify, label) {
-  // Copy command to clipboard first
-  let fullCmd = cmd;
-  if (isVerify) {
-    // Wrap in output capture + pbcopy
-    fullCmd = 'OUTPUT=$( ' + cmd + ' 2>&1 ); echo "$OUTPUT"; echo "$OUTPUT" | pbcopy; echo ""; echo "  ✓ Output copied to clipboard — paste it back in the browser."';
+function runInTerminal(idx) {
+  const entry = cmdRegistry[idx];
+  if (!entry) return;
+
+  let fullCmd = entry.cmd;
+  if (entry.isVerify) {
+    fullCmd = 'OUTPUT=$( ' + entry.cmd + ' 2>&1 ); echo "$OUTPUT"; echo "$OUTPUT" | pbcopy; echo ""; echo "  ✓ Output copied to clipboard — paste it back in the browser."';
   }
 
-  navigator.clipboard.writeText(fullCmd).then(() => {
-    // Open Terminal.app via applescript-style URL
-    // This is the most reliable cross-browser way on macOS
-    const termUrl = 'x-apple.terminal:///usr/bin/env';
-    const opened = window.open(termUrl);
-
-    // Fallback: try direct open
-    if (!opened) {
-      // Show manual instructions
-      showTerminalHelp(fullCmd, isVerify);
-      return;
-    }
-
-    showTerminalHelp(fullCmd, isVerify);
+  navigator.clipboard.writeText(fullCmd).then(function() {
+    showTerminalHelp(fullCmd, entry.isVerify);
+  }).catch(function() {
+    showTerminalHelp(fullCmd, entry.isVerify);
   });
 }
 
