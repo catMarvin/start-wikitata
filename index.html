@@ -21,13 +21,13 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px;text-al
 .step{background:var(--sf);border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;overflow:hidden;transition:all .4s ease}
 .step.locked{display:none}
 .step.cur{border-color:var(--acc)}
-.step.done{border-color:var(--grn-d);opacity:.45;cursor:pointer;transition:all .4s ease}
-.step.done:hover{opacity:.7}
+.step.done{border-color:rgba(74,222,128,.25);opacity:.75;cursor:pointer;transition:all .4s ease}
+.step.done:hover{opacity:.9}
 
 .sh{display:flex;align-items:center;gap:12px;padding:14px 18px}
 .sn{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;background:var(--bd);color:var(--tx2);transition:all .3s}
 .step.cur .sn{background:var(--acc);color:#fff}
-.step.done .sn{background:var(--grn-d);color:var(--grn)}
+.step.done .sn{background:var(--grn);color:#000;font-weight:700}
 .st{font-size:14px;font-weight:500;transition:color .3s}
 .step.done .st{color:var(--tx2)}
 .sc{margin-left:auto;color:var(--grn);font-size:18px;display:none;transition:all .3s}
@@ -46,10 +46,22 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px;text-al
 .substep-label{font-size:10px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
 
 /* Commands */
-.cmd{background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:11px 14px;padding-right:64px;font-family:var(--m);font-size:12px;color:var(--grn);line-height:1.5;margin-bottom:6px;position:relative;white-space:pre-wrap;word-break:break-all}
-.cmd .cp{position:absolute;top:7px;right:7px;background:var(--bd);border:none;color:var(--tx2);padding:3px 9px;border-radius:5px;font-size:10px;cursor:pointer;font-family:var(--f)}
-.cmd .cp:hover{background:rgba(108,138,255,.15);color:var(--acc)}
-.cmd .cp.ok{background:var(--grn-d);color:var(--grn)}
+.cmd-wrap{margin-bottom:12px}
+.cmd{background:var(--code);border:1px solid var(--bd);border-radius:8px 8px 0 0;padding:11px 14px;font-family:var(--m);font-size:12px;color:var(--grn);line-height:1.5;white-space:pre-wrap;word-break:break-all}
+.cmd-actions{display:flex;gap:0;border:1px solid var(--bd);border-top:none;border-radius:0 0 8px 8px;overflow:hidden;background:var(--sf2)}
+.cmd-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 0;font-size:11px;font-weight:600;font-family:var(--f);cursor:pointer;border:none;background:transparent;color:var(--tx2);transition:all .2s;border-right:1px solid var(--bd)}
+.cmd-btn:last-child{border-right:none}
+.cmd-btn:hover{background:rgba(255,255,255,.04);color:var(--tx)}
+.cmd-btn.copied{color:var(--grn)}
+.cmd-btn.disabled{opacity:.3;pointer-events:none}
+.cmd-btn.ready{color:var(--grn);background:var(--grn-d);opacity:1;pointer-events:auto}
+.cmd-btn.ready:hover{background:rgba(74,222,128,.18)}
+
+/* Animated checkbox */
+.chk{display:inline-block;width:15px;height:15px;border-radius:50%;border:2px solid var(--bd);transition:all .25s ease;position:relative;flex-shrink:0}
+.cmd-btn.copied .chk{border-color:var(--grn);background:var(--grn)}
+.cmd-btn.copied .chk::after{content:'✓';position:absolute;top:-3px;left:1px;font-size:11px;font-weight:700;color:#000;animation:popIn .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes popIn{from{transform:scale(0) rotate(-45deg)}to{transform:scale(1) rotate(0)}}
 
 /* Verify area */
 .verify{margin-top:10px;margin-bottom:10px}
@@ -303,16 +315,14 @@ function cmdHtml(text, opts) {
   const esc = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const isVerify = opts?.verify || false;
   const label = opts?.label || 'step';
-  // Store command in registry, reference by index
   const idx = cmdRegistry.length;
   cmdRegistry.push({ cmd: text, isVerify, label });
-  let h = '<div class="cmd">' + esc + '<span class="cp" onclick="cc(this.parentElement)">Copy</span></div>';
-  h += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">';
-  h += '<button class="term-open" onclick="runInTerminal(' + idx + ')" style="font-size:11px;padding:6px 14px">Run in Terminal</button>';
-  if (isVerify) {
-    h += '<span style="font-size:10px;color:var(--tx2)">Copies command → open Terminal → paste → output auto-copied back</span>';
-  }
-  h += '</div>';
+  let h = '<div class="cmd-wrap">';
+  h += '<div class="cmd">' + esc + '</div>';
+  h += '<div class="cmd-actions">';
+  h += '<button class="cmd-btn" id="cp-' + idx + '" onclick="cmdCopy(' + idx + ')"><span class="chk"></span> Copy</button>';
+  h += '<button class="cmd-btn disabled" id="run-' + idx + '" onclick="runInTerminal(' + idx + ')">Run in Terminal</button>';
+  h += '</div></div>';
   return h;
 }
 
@@ -392,11 +402,8 @@ function runInTerminal(idx) {
     fullCmd = 'OUTPUT=$( ' + entry.cmd + ' 2>&1 ); echo "$OUTPUT"; echo "$OUTPUT" | pbcopy; echo ""; echo "  ✓ Output copied to clipboard — paste it back in the browser."';
   }
 
-  navigator.clipboard.writeText(fullCmd).then(function() {
-    showTerminalHelp(fullCmd, entry.isVerify);
-  }).catch(function() {
-    showTerminalHelp(fullCmd, entry.isVerify);
-  });
+  // Command was already copied by cmdCopy — just show the modal
+  showTerminalHelp(fullCmd, entry.isVerify);
 }
 
 function showTerminalHelp(cmd, isVerify) {
@@ -444,14 +451,37 @@ function showTerminalHelp(cmd, isVerify) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// COPY
+// COPY + ENABLE RUN
 // ═══════════════════════════════════════════════════════════════
+function cmdCopy(idx) {
+  const entry = cmdRegistry[idx];
+  if (!entry) return;
+
+  let fullCmd = entry.cmd;
+  if (entry.isVerify) {
+    fullCmd = 'OUTPUT=$( ' + entry.cmd + ' 2>&1 ); echo "$OUTPUT"; echo "$OUTPUT" | pbcopy; echo ""; echo "  ✓ Output copied to clipboard — paste it back in the browser."';
+  }
+
+  navigator.clipboard.writeText(fullCmd).then(function() {
+    // Animate checkbox
+    const cpBtn = document.getElementById('cp-' + idx);
+    if (cpBtn) {
+      cpBtn.classList.add('copied');
+      cpBtn.innerHTML = '<span class="chk"></span> Copied';
+    }
+    // Enable Run in Terminal
+    const runBtn = document.getElementById('run-' + idx);
+    if (runBtn) {
+      runBtn.classList.remove('disabled');
+      runBtn.classList.add('ready');
+    }
+  }).catch(function() {});
+}
+
+// Legacy copy for inline use
 function cc(el) {
   const text = el.textContent.replace(/Copy$/, '').replace(/Copied$/, '').trim();
-  const btn = el.querySelector('.cp');
-  navigator.clipboard.writeText(text).then(() => {
-    if (btn) { btn.textContent = 'Copied'; btn.classList.add('ok'); setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2500); }
-  });
+  navigator.clipboard.writeText(text);
 }
 
 // ═══════════════════════════════════════════════════════════════
