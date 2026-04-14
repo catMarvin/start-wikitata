@@ -14,6 +14,46 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PORT = parseInt(process.env.PORT || '3737', 10);
 
+// ── Preflight checks ────────────────────────────────────────────────────────
+
+const R = '\x1b[31m', G = '\x1b[32m', Y = '\x1b[33m', D = '\x1b[2m', B = '\x1b[1m', X = '\x1b[0m';
+
+function preflight() {
+  let ok = true;
+
+  // Node version
+  const [major] = process.versions.node.split('.').map(Number);
+  if (major < 18) {
+    console.error(`  ${R}Error:${X} Node.js v${process.versions.node} detected — v18+ required.`);
+    console.error(`  ${D}Run: brew install node${X}`);
+    ok = false;
+  }
+
+  // setup.html exists
+  const htmlPath = join(__dirname, 'setup.html');
+  if (!existsSync(htmlPath)) {
+    console.error(`  ${R}Error:${X} setup.html not found in ${__dirname}`);
+    console.error(`  ${D}Try: git pull${X}`);
+    ok = false;
+  }
+
+  // ws module
+  try {
+    await import('ws');
+  } catch {
+    console.error(`  ${R}Error:${X} ws module not installed.`);
+    console.error(`  ${D}Run: npm install${X}`);
+    ok = false;
+  }
+
+  if (!ok) {
+    console.error(`\n  ${R}Preflight failed.${X} Fix the issues above and try again.\n`);
+    process.exit(1);
+  }
+}
+
+await preflight();
+
 // ── HTTP Server (serves setup.html) ──────────────────────────────────────────
 
 const httpServer = createServer((req, res) => {

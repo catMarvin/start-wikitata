@@ -96,17 +96,26 @@ const STEPS = [
     desc: 'Installs Git and build essentials.',
     subs: [
       {
+        label: 'Check if already installed',
+        cmd: 'xcode-select -p 2>&1 && git --version 2>&1 && echo "XCODE_OK" || echo "XCODE_MISSING"',
+        verify: true,
+        pass: /XCODE_OK/,
+        passMsg: 'Excellent — Xcode is already installed and Git is ready. Next up: Homebrew (package manager), then Node.js, then the full setup wizard takes over.',
+        failMsg: 'Not installed yet — run the install command below.',
+        skipOnPass: true
+      },
+      {
         label: 'Install',
-        info: 'A system popup appears — click <b>Install</b> and wait 2-5 minutes. If it says "already installed" that\'s fine.',
-        cmd: 'xcode-select --install 2>&1; echo "---DONE---"'
+        info: 'A system popup appears — click <b>Install</b> and wait 2-5 minutes.',
+        cmd: 'xcode-select --install'
       },
       {
         label: 'Verify',
-        info: 'Paste the output below.',
-        cmd: 'git --version && echo "XCODE_OK"',
+        info: 'After install finishes, paste the output below.',
+        cmd: 'xcode-select -p && git --version && echo "XCODE_OK"',
         verify: true,
-        pass: /git version/i,
-        failMsg: 'Git not found. Make sure Xcode CLI tools finished installing, then try again.',
+        pass: /XCODE_OK/,
+        failMsg: 'Still not detected. Make sure the Xcode install popup finished completely, then try again.',
         passMsg: 'Excellent — Xcode is installed and Git is ready. Next up: Homebrew (package manager), then Node.js, then the full setup wizard takes over.'
       }
     ]
@@ -178,7 +187,7 @@ const STEPS = [
       {
         label: 'Run this command',
         info: 'Browser will open automatically to <b>localhost:3737</b>. Have your <b>username</b> and <b>invite code</b> ready — wikiTaTa will have provided these to you as part of our early test group.',
-        cmd: 'git clone https://github.com/catMarvin/start-wikitata.git ~/start-wikitata 2>/dev/null; cd ~/start-wikitata && git pull && npm install && node server.js',
+        cmd: 'if ! command -v node >/dev/null 2>&1; then echo "\\n  Error: Node.js not found. Complete step 3 first."; exit 1; fi\nif ! command -v npm >/dev/null 2>&1; then echo "\\n  Error: npm not found. Reinstall Node.js (brew install node)."; exit 1; fi\nif ! command -v git >/dev/null 2>&1; then echo "\\n  Error: Git not found. Complete step 1 first."; exit 1; fi\ngit clone https://github.com/catMarvin/start-wikitata.git ~/start-wikitata 2>/dev/null\ncd ~/start-wikitata && git pull || { echo "\\n  Error: Could not access repo. Check internet connection."; exit 1; }\nnpm install || { echo "\\n  Error: npm install failed. Try: rm -rf node_modules && npm install"; exit 1; }\nnode server.js',
         isFinal: true
       }
     ]
