@@ -72,6 +72,21 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px}
 .note b{color:var(--tx)}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
+/* Progress steps */
+.prog-step{padding:14px 16px;margin-bottom:2px;border-radius:8px;border:1px solid transparent;transition:all .3s}
+.prog-step .ps-head{display:flex;align-items:center;gap:10px}
+.prog-step .ps-icon{width:22px;height:22px;border-radius:50%;background:var(--bd);color:var(--tx2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;transition:all .3s}
+.prog-step .ps-title{font-size:13px;font-weight:500;color:var(--tx2);transition:color .3s}
+.prog-step .ps-body{display:none;font-size:12px;color:var(--tx2);line-height:1.6;margin-top:8px;padding-left:32px}
+.prog-step .ps-body b{color:var(--tx);font-weight:500}
+.prog-step.active{background:var(--sf);border-color:var(--bd)}
+.prog-step.active .ps-icon{background:var(--acc);color:#fff}
+.prog-step.active .ps-title{color:var(--tx)}
+.prog-step.active .ps-body{display:block;animation:fadeUp .3s ease}
+.prog-step.done .ps-icon{background:var(--grn);color:transparent;font-size:0}
+.prog-step.done .ps-icon::after{content:'✓';font-size:10px;color:#000;font-weight:700}
+.prog-step.done .ps-title{color:var(--tx2)}
+
 /* Terminal modal */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center}
 .modal-bg.show{display:flex}
@@ -81,7 +96,7 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px}
 </style>
 </head>
 <body>
-<div class="ver">v0.3.1</div>
+<div class="ver">v0.4.0</div>
 
 <div class="c">
   <h1>wikiTaTa</h1>
@@ -150,7 +165,44 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px}
   <div class="waiting" id="waiting-view">
     <div class="spinner"></div>
     <h2 style="font-size:18px;margin-bottom:6px">Setup is running in Terminal</h2>
-    <p style="color:var(--tx2);font-size:13px;line-height:1.6">The script will open this page when it's done.<br>You can switch to Terminal to watch the progress.</p>
+    <p style="color:var(--tx2);font-size:13px;line-height:1.6;margin-bottom:24px">The script will open this page when it's done. Here's what's happening:</p>
+
+    <div id="progress-steps" style="text-align:left">
+      <div class="prog-step active" id="ps-1">
+        <div class="ps-head"><span class="ps-icon">1</span><span class="ps-title">Xcode Command Line Tools</span></div>
+        <div class="ps-body">The foundation. Xcode gives you <b>Git</b> (version control) and C compilers that everything else depends on. If it's already installed, the script skips ahead.</div>
+      </div>
+      <div class="prog-step" id="ps-2">
+        <div class="ps-head"><span class="ps-icon">2</span><span class="ps-title">Homebrew</span></div>
+        <div class="ps-body">The macOS package manager. Think of it as an app store for developer tools — one command to install anything, one command to update everything.</div>
+      </div>
+      <div class="prog-step" id="ps-3">
+        <div class="ps-head"><span class="ps-icon">3</span><span class="ps-title">Node.js</span></div>
+        <div class="ps-body">JavaScript runtime that powers Claude Code and the wikiTaTa MCP server. Also gives you <b>npm</b> for installing packages.</div>
+      </div>
+      <div class="prog-step" id="ps-4">
+        <div class="ps-head"><span class="ps-icon">4</span><span class="ps-title">Claude Code + Supabase + Vercel</span></div>
+        <div class="ps-body"><b>Claude Code</b> is your AI pair programmer — it reads your wikiTaTa config and knows your projects. <b>Supabase</b> is the database. <b>Vercel</b> deploys your sites. All three talk to each other through wikiTaTa.</div>
+      </div>
+      <div class="prog-step" id="ps-5">
+        <div class="ps-head"><span class="ps-icon">5</span><span class="ps-title">Your Identity</span></div>
+        <div class="ps-body">Links your username to this machine. When you open Claude, it knows who you are, what you're working on, and what tools you have access to.</div>
+      </div>
+      <div class="prog-step" id="ps-6">
+        <div class="ps-head"><span class="ps-icon">6</span><span class="ps-title">SSH Key for GitHub</span></div>
+        <div class="ps-body">A secure key pair that proves your identity to GitHub without passwords. The script checks for existing keys first — if you already have one, it skips this step.</div>
+      </div>
+      <div class="prog-step" id="ps-7">
+        <div class="ps-head"><span class="ps-icon">7</span><span class="ps-title">wikiTaTa Repo + Claude Config</span></div>
+        <div class="ps-body">Clones the private wikiTaTa repo and installs the <b>MCP server</b> — this is what lets Claude read your wiki cards, track sessions, and manage your projects. Also writes your Claude config files.</div>
+      </div>
+      <div class="prog-step" id="ps-8">
+        <div class="ps-head"><span class="ps-icon">8</span><span class="ps-title">Shell Tools + Environment</span></div>
+        <div class="ps-body">Sets up your terminal with <b>wt_autolink</b> (connects Terminal sessions to Claude), environment variables, history, tab completion, and useful aliases. Your terminal becomes wikiTaTa-aware.</div>
+      </div>
+    </div>
+
+    <p style="color:var(--tx2);font-size:11px;line-height:1.6;margin-top:20px">Already-installed tools are detected and skipped automatically.<br>The whole process takes 2-10 minutes.</p>
   </div>
 
   <!-- ═══ COMPLETE ═══ -->
@@ -345,13 +397,38 @@ p{font-size:11px;color:#555;margin-top:12px;text-align:center;line-height:1.5}</
   // Show waiting state
   document.getElementById('welcome-view').style.display = 'none';
   document.getElementById('waiting-view').style.display = 'block';
+  startProgressCycle();
 
   // Poll for completion (setup.sh will open this URL with ?done=1)
   pollForCompletion();
 }
 
+let progressStep = 1;
+let progressTimer = null;
+
+function startProgressCycle() {
+  const steps = document.querySelectorAll('.prog-step');
+  const durations = [8000, 12000, 10000, 15000, 6000, 10000, 15000, 8000];
+
+  function advance() {
+    if (progressStep > 8) { clearInterval(progressTimer); return; }
+    steps.forEach((s, i) => {
+      s.classList.remove('active');
+      if (i < progressStep - 1) s.classList.add('done');
+    });
+    if (progressStep <= 8) {
+      const cur = document.getElementById('ps-' + progressStep);
+      if (cur) { cur.classList.remove('done'); cur.classList.add('active'); }
+    }
+    progressTimer = setTimeout(() => { progressStep++; advance(); }, durations[progressStep - 1] || 10000);
+  }
+  advance();
+}
+
 function pollForCompletion() {
   if (new URLSearchParams(window.location.search).get('done')) {
+    if (progressTimer) clearTimeout(progressTimer);
+    document.querySelectorAll('.prog-step').forEach(s => { s.classList.remove('active'); s.classList.add('done'); });
     document.getElementById('waiting-view').style.display = 'none';
     document.getElementById('complete-view').style.display = 'block';
     return;
