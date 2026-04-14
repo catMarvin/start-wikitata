@@ -5,143 +5,319 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>wikiTaTa — Get Started</title>
 <style>
-:root{--bg:#0a0a0f;--sf:#111118;--sf2:#18181f;--bd:#252530;--tx:#e0e0e8;--tx2:#777788;--acc:#6c8aff;--grn:#4ade80;--gold:#d4a24e;--code:#0d0d16;--f:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;--m:'SF Mono','Fira Code',Consolas,monospace}
+:root{--bg:#0a0a0f;--sf:#111118;--sf2:#18181f;--bd:#252530;--tx:#e0e0e8;--tx2:#777788;--acc:#6c8aff;--grn:#4ade80;--grn-d:rgba(74,222,128,.12);--gold:#d4a24e;--gold-d:rgba(212,162,78,.1);--red:#f87171;--red-d:rgba(248,113,113,.12);--code:#0d0d16;--f:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;--m:'SF Mono','Fira Code',Consolas,monospace}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;display:flex;align-items:center;justify-content:center}
-.c{max-width:560px;padding:40px 24px}
-h1{font-size:32px;font-weight:600;letter-spacing:-.5px;margin-bottom:8px;text-align:center}
-.sub{color:var(--tx2);font-size:15px;margin-bottom:40px;line-height:1.5;text-align:center}
+body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;display:flex;justify-content:center;padding:40px 16px 80px}
+.c{max-width:580px;width:100%}
+h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px;text-align:center}
+.sub{color:var(--tx2);font-size:14px;margin-bottom:32px;line-height:1.5;text-align:center}
 
-/* Tabs */
-.tabs{display:flex;gap:0;margin-bottom:24px;border-bottom:2px solid var(--bd)}
-.tab{flex:1;padding:10px 0;text-align:center;font-size:13px;font-weight:600;color:var(--tx2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
-.tab:hover{color:var(--tx)} .tab.on{color:var(--acc);border-bottom-color:var(--acc)}
-.pane{display:none} .pane.on{display:block}
+/* Progress */
+.prog{display:flex;gap:3px;margin-bottom:20px}
+.prog .s{flex:1;height:3px;border-radius:2px;background:var(--bd);transition:background .4s}
+.prog .s.done{background:var(--grn)} .prog .s.cur{background:var(--acc)}
 
-/* Section labels */
-.slabel{font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;font-weight:600}
-.slabel.num{display:flex;align-items:center;gap:8px}
-.slabel .n{width:22px;height:22px;border-radius:50%;background:var(--bd);color:var(--tx2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
-.slabel .n.done{background:rgba(74,222,128,.15);color:var(--grn)}
+/* Steps */
+.step{background:var(--sf);border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;overflow:hidden;transition:all .3s}
+.step.locked{opacity:.25;pointer-events:none}
+.step.cur{border-color:var(--acc)}
+.step.done{border-color:var(--grn-d);opacity:.5}
+.step.done:hover{opacity:.65}
 
-/* Command blocks */
-.cmd{background:var(--code);border:1px solid var(--bd);border-radius:10px;padding:14px 16px;padding-right:64px;font-family:var(--m);font-size:13px;color:var(--grn);line-height:1.6;margin-bottom:8px;position:relative;cursor:pointer;transition:border-color .2s;white-space:pre-wrap;word-break:break-all}
-.cmd:hover{border-color:var(--acc)}
-.cmd .cp{position:absolute;top:10px;right:10px;background:var(--bd);border:none;color:var(--tx2);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:var(--f);transition:all .15s}
+.sh{display:flex;align-items:center;gap:12px;padding:14px 18px}
+.sn{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;background:var(--bd);color:var(--tx2)}
+.step.cur .sn{background:var(--acc);color:#fff}
+.step.done .sn{background:var(--grn-d);color:var(--grn)}
+.st{font-size:14px;font-weight:500}
+.sc{margin-left:auto;color:var(--grn);font-size:16px;display:none}
+.step.done .sc{display:block}
+
+.sb{display:none;padding:4px 18px 18px 56px}
+.step.cur .sb{display:block}
+.sb p{font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:10px}
+.sb p b{color:var(--tx);font-weight:500}
+
+/* Sub-steps */
+.substep{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--bd)}
+.substep:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.substep-label{font-size:10px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+
+/* Commands */
+.cmd{background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:11px 14px;padding-right:64px;font-family:var(--m);font-size:12px;color:var(--grn);line-height:1.5;margin-bottom:6px;position:relative;white-space:pre-wrap;word-break:break-all}
+.cmd .cp{position:absolute;top:7px;right:7px;background:var(--bd);border:none;color:var(--tx2);padding:3px 9px;border-radius:5px;font-size:10px;cursor:pointer;font-family:var(--f)}
 .cmd .cp:hover{background:rgba(108,138,255,.15);color:var(--acc)}
-.cmd .cp.ok{background:rgba(74,222,128,.15);color:var(--grn)}
+.cmd .cp.ok{background:var(--grn-d);color:var(--grn)}
+
+/* Verify area */
+.verify{margin-top:10px;margin-bottom:10px}
+.verify label{font-size:10px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px}
+.verify textarea{width:100%;height:54px;font-size:11px;font-family:var(--m);background:var(--code);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:8px;resize:vertical}
+.verify textarea:focus{border-color:var(--acc);outline:none}
+.verify-btn{background:var(--acc);color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;font-family:var(--f);margin-top:6px}
+.verify-btn:hover{filter:brightness(1.1)}
+
+/* Result badges */
+.result{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:500;margin-top:8px}
+.result.pass{background:var(--grn-d);color:var(--grn)}
+.result.fail{background:var(--red-d);color:var(--red)}
+.result.hint{background:var(--gold-d);color:var(--gold)}
 
 /* Notes */
-.note{font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:16px;padding:10px 14px;background:var(--sf2);border-radius:8px;border-left:3px solid var(--bd)}
-.note.warn{border-left-color:var(--gold)} .note.info{border-left-color:var(--acc)}
-.note b{color:var(--tx);font-weight:500}
+.note{font-size:11px;color:var(--tx2);line-height:1.5;padding:8px 12px;background:var(--sf2);border-radius:6px;margin-bottom:8px;border-left:3px solid var(--bd)}
+.note.warn{border-left-color:var(--gold)} .note.info{border-left-color:var(--acc)} .note.err{border-left-color:var(--red)}
 
-/* Sections */
-.sec{margin-bottom:28px}
-
-/* Steps summary */
-.what{text-align:left;margin-top:32px;border-top:1px solid var(--bd);padding-top:24px}
-.what h2{font-size:13px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;font-weight:600}
-.ws{display:flex;gap:10px;margin-bottom:12px;align-items:flex-start}
-.ws .n{width:22px;height:22px;border-radius:50%;background:var(--bd);color:var(--tx2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
-.ws .t{font-size:12px;color:var(--tx2);line-height:1.5;padding-top:2px}
-.ws .t b{color:var(--tx);font-weight:500}
-
-.badge{display:inline-block;margin-top:24px;padding:4px 12px;border-radius:20px;font-size:10px;color:var(--tx2);border:1px solid var(--bd);letter-spacing:.5px;text-align:center;width:100%}
+/* Finish */
+.fin{text-align:center;padding:32px 0;display:none}
+.fin h2{font-size:20px;color:var(--grn);margin-bottom:6px}
+.fin p{color:var(--tx2);font-size:13px;line-height:1.6}
 </style>
 </head>
 <body>
 <div class="c">
   <h1>wikiTaTa</h1>
-  <p class="sub">Developer setup for your Mac.<br>Step by step. Nothing skipped.</p>
+  <p class="sub">Developer setup for your Mac.<br>Each step verifies before you move on.</p>
 
-  <!-- Tabs -->
-  <div class="tabs">
-    <div class="tab on" onclick="showPane('fresh')">Fresh Mac</div>
-    <div class="tab" onclick="showPane('hasnode')">I have Node.js</div>
-    <div class="tab" onclick="showPane('returning')">Returning</div>
+  <div class="prog" id="prog"></div>
+  <div id="steps"></div>
+
+  <div class="fin" id="fin">
+    <h2>Wizard is running</h2>
+    <p>Switch to the browser tab at <b>localhost:3737</b><br>The setup wizard handles everything from here.</p>
   </div>
-
-  <!-- ═══ FRESH MAC ═══ -->
-  <div class="pane on" id="pane-fresh">
-
-    <div class="sec">
-      <div class="slabel num"><span class="n">1</span> Xcode Command Line Tools</div>
-      <div class="note info">This installs Git and other essentials. A system popup will appear — click <b>Install</b> and wait 2-5 minutes. If it says "already installed", move on.</div>
-      <div class="cmd" onclick="cc(this)">xcode-select --install<span class="cp">Copy</span></div>
-    </div>
-
-    <div class="sec">
-      <div class="slabel num"><span class="n">2</span> Homebrew</div>
-      <div class="note info">macOS package manager. Makes installing everything else clean. Takes 1-2 minutes.</div>
-      <div class="cmd" onclick="cc(this)">/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"<span class="cp">Copy</span></div>
-      <div class="note warn"><b>Important:</b> After install, it prints 2 lines to run. They look like this — copy and run them:</div>
-      <div class="cmd" onclick="cc(this)">echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
-eval "$(/opt/homebrew/bin/brew shellenv)"<span class="cp">Copy</span></div>
-    </div>
-
-    <div class="sec">
-      <div class="slabel num"><span class="n">3</span> Node.js</div>
-      <div class="cmd" onclick="cc(this)">brew install node<span class="cp">Copy</span></div>
-      <div class="note">Verify: <b>node -v</b> should show v22 or higher.</div>
-    </div>
-
-    <div class="sec">
-      <div class="slabel num"><span class="n">4</span> Launch the setup wizard</div>
-      <div class="cmd" onclick="cc(this)">git clone https://github.com/catMarvin/start-wikitata.git ~/start-wikitata && cd ~/start-wikitata && npm install && node server.js<span class="cp">Copy</span></div>
-      <div class="note info">Browser opens automatically to <b>localhost:3737</b> with the full setup wizard. It handles everything else — SSH keys, CLI tools, Claude Code config, shell setup.</div>
-    </div>
-
-    <div class="what">
-      <h2>What the wizard does</h2>
-      <div class="ws"><div class="n">5</div><div class="t"><b>SSH key</b> — generate, add to GitHub, test connection</div></div>
-      <div class="ws"><div class="n">6</div><div class="t"><b>CLI tools</b> — Claude Code, Supabase CLI, Vercel CLI</div></div>
-      <div class="ws"><div class="n">7</div><div class="t"><b>Authenticate</b> — enter your username + invite code from Todd</div></div>
-      <div class="ws"><div class="n">8</div><div class="t"><b>Clone + configure</b> — private repo, MCP connections, shell tools</div></div>
-      <div class="ws"><div class="n">9</div><div class="t"><b>Launch Claude</b> — type <code style="background:var(--code);padding:1px 5px;border-radius:3px;font-family:var(--m);font-size:11px">claude</code> and say <code style="background:var(--code);padding:1px 5px;border-radius:3px;font-family:var(--m);font-size:11px">start session sop</code></div></div>
-    </div>
-  </div>
-
-  <!-- ═══ HAS NODE ═══ -->
-  <div class="pane" id="pane-hasnode">
-    <div class="sec">
-      <div class="slabel">One command — paste in Terminal</div>
-      <div class="cmd" onclick="cc(this)">git clone https://github.com/catMarvin/start-wikitata.git ~/start-wikitata && cd ~/start-wikitata && npm install && node server.js<span class="cp">Copy</span></div>
-      <div class="note info">Browser opens to <b>localhost:3737</b>. The wizard detects what you have and skips what's already installed.</div>
-    </div>
-    <div class="note">Have your <b>username</b> and <b>invite code</b> from Todd ready.</div>
-  </div>
-
-  <!-- ═══ RETURNING ═══ -->
-  <div class="pane" id="pane-returning">
-    <div class="sec">
-      <div class="slabel">Already cloned? Just start the server</div>
-      <div class="cmd" onclick="cc(this)">cd ~/start-wikitata && git pull && node server.js<span class="cp">Copy</span></div>
-    </div>
-    <div class="sec">
-      <div class="slabel">Or skip the wizard — just launch Claude</div>
-      <div class="cmd" onclick="cc(this)">claude<span class="cp">Copy</span></div>
-      <div class="note">If Claude Code is already configured, just open a terminal and type <b>claude</b>. Say <b>start session sop</b> and you're in.</div>
-    </div>
-  </div>
-
-  <div class="badge">macOS — Apple Silicon or Intel</div>
 </div>
 
 <script>
-function showPane(id){
-  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
-  document.getElementById('pane-'+id).classList.add('on');
-  event.target.classList.add('on');
+// ═══════════════════════════════════════════════════════════════
+// STEP DEFINITIONS
+// ═══════════════════════════════════════════════════════════════
+const STEPS = [
+  {
+    id: 'xcode', title: 'Xcode Command Line Tools',
+    desc: 'Installs Git and build essentials.',
+    subs: [
+      {
+        label: 'Install',
+        info: 'A system popup appears — click <b>Install</b> and wait 2-5 minutes. If it says "already installed" that\'s fine.',
+        cmd: 'xcode-select --install 2>&1; echo "---DONE---"'
+      },
+      {
+        label: 'Verify',
+        info: 'Paste the output below.',
+        cmd: 'git --version && echo "XCODE_OK"',
+        verify: true,
+        pass: /git version/i,
+        failMsg: 'Git not found. Make sure Xcode CLI tools finished installing, then try again.',
+        passMsg: 'Excellent — Xcode is installed and Git is ready. Next up: Homebrew (package manager), then Node.js, then the full setup wizard takes over.'
+      }
+    ]
+  },
+  {
+    id: 'brew', title: 'Homebrew',
+    desc: 'macOS package manager. Everything else installs cleanly through this.',
+    subs: [
+      {
+        label: 'Check if already installed',
+        cmd: 'brew --version 2>&1 && echo "BREW_OK" || echo "BREW_MISSING"',
+        verify: true,
+        pass: /Homebrew/i,
+        passMsg: 'Nice — Homebrew is already here. Skipping ahead to Node.js.',
+        failMsg: 'Not installed yet — no problem, run the install command below. Takes about 1-2 minutes.',
+        skipOnPass: true
+      },
+      {
+        label: 'Install Homebrew',
+        info: 'This takes 1-2 minutes. Let it finish completely.',
+        cmd: '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+      },
+      {
+        label: 'Add Homebrew to PATH',
+        info: '<b>Critical</b> — without this, brew won\'t be found in new terminals.',
+        cmd: 'echo \'eval "$(/opt/homebrew/bin/brew shellenv)"\' >> ~/.zprofile\neval "$(/opt/homebrew/bin/brew shellenv)"'
+      },
+      {
+        label: 'Verify Homebrew',
+        cmd: 'brew --version && echo "BREW_VERIFIED"',
+        verify: true,
+        pass: /Homebrew/i,
+        failMsg: 'brew not found. Did you run the PATH step above? Try opening a NEW terminal tab and running the verify again.',
+        passMsg: 'Homebrew is locked and loaded. One more prerequisite — Node.js — then the wizard handles everything else.'
+      }
+    ]
+  },
+  {
+    id: 'node', title: 'Node.js',
+    desc: 'Required for the setup wizard, Claude Code, and all CLI tools.',
+    subs: [
+      {
+        label: 'Check if already installed',
+        cmd: 'node -v 2>&1 && echo "NODE_OK" || echo "NODE_MISSING"',
+        verify: true,
+        pass: /^v(1[89]|2\d|[3-9]\d)/m,
+        passMsg: 'Node.js is already installed. Skipping straight to the wizard — you\'re almost there.',
+        failMsg: 'Not found or too old — install via Homebrew below. Quick one.',
+        skipOnPass: true
+      },
+      {
+        label: 'Install Node.js',
+        cmd: 'brew install node'
+      },
+      {
+        label: 'Verify Node.js',
+        cmd: 'node -v && npm -v && echo "NODE_VERIFIED"',
+        verify: true,
+        pass: /^v(1[89]|2\d|[3-9]\d)/m,
+        failMsg: 'Node.js not detected. Try: brew install node — then verify again.',
+        passMsg: 'Node.js and npm are ready. That\'s all the prerequisites done. The setup wizard takes it from here — SSH keys, CLI tools, Claude Code, shell config, everything.'
+      }
+    ]
+  },
+  {
+    id: 'wizard', title: 'Launch Setup Wizard',
+    desc: 'Clones the repo, installs dependencies, and opens the full wizard.',
+    subs: [
+      {
+        label: 'Run this command',
+        info: 'Browser will open automatically to <b>localhost:3737</b>. Have your <b>username</b> and <b>invite code</b> from Todd ready.',
+        cmd: 'git clone https://github.com/catMarvin/start-wikitata.git ~/start-wikitata 2>/dev/null; cd ~/start-wikitata && git pull && npm install && node server.js',
+        isFinal: true
+      }
+    ]
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let curStep = 0;
+let stepResults = {}; // stepId -> 'done'
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
+function render() {
+  // Progress bar
+  const pr = document.getElementById('prog');
+  pr.innerHTML = STEPS.map((_, i) =>
+    `<div class="s${i < curStep ? ' done' : i === curStep ? ' cur' : ''}"></div>`
+  ).join('');
+
+  // Steps
+  const ct = document.getElementById('steps');
+  ct.innerHTML = STEPS.map((s, i) => {
+    const cls = i < curStep ? 'done' : i === curStep ? 'cur' : 'locked';
+    let h = `<div class="step ${cls}" data-step="${i}">`;
+    h += `<div class="sh"><div class="sn">${i+1}</div><div class="st">${s.title}</div><div class="sc">&#10003;</div></div>`;
+    h += `<div class="sb">`;
+    h += `<p>${s.desc}</p>`;
+
+    s.subs.forEach((sub, si) => {
+      const subId = `${s.id}-${si}`;
+      h += `<div class="substep">`;
+      h += `<div class="substep-label">${sub.label}</div>`;
+      if (sub.info) h += `<p>${sub.info}</p>`;
+      if (sub.cmd) h += cmdHtml(sub.cmd);
+
+      if (sub.verify) {
+        h += `<div class="verify">`;
+        h += `<label>Paste terminal output here</label>`;
+        h += `<textarea id="v-${subId}" placeholder="Paste output..."></textarea>`;
+        h += `<button class="verify-btn" onclick="checkVerify('${s.id}',${si})">Verify</button>`;
+        h += `</div>`;
+        h += `<div id="r-${subId}"></div>`;
+      }
+
+      if (sub.isFinal) {
+        h += `<div style="margin-top:12px"><button class="verify-btn" onclick="advanceStep(${i})" style="background:var(--grn)">Wizard is running — I see localhost:3737</button></div>`;
+      }
+
+      h += `</div>`;
+    });
+
+    // Next button (only if step has verify subs that all passed, or no verify at all)
+    const hasVerify = s.subs.some(sub => sub.verify);
+    const allPassed = s.subs.filter(sub => sub.verify).every((sub, si) => stepResults[`${s.id}-${si}`] === 'pass');
+    if (hasVerify && allPassed) {
+      h += `<div style="margin-top:8px"><button class="verify-btn" onclick="advanceStep(${i})" style="background:var(--grn);padding:9px 24px;font-size:12px">Next Step</button></div>`;
+    }
+
+    h += `</div></div>`;
+    return h;
+  }).join('');
 }
-function cc(el){
-  const text=el.textContent.replace(/Copy$/,'').replace(/Copied$/,'').trim();
-  const btn=el.querySelector('.cp');
-  navigator.clipboard.writeText(text).then(()=>{
-    if(btn){btn.textContent='Copied';btn.classList.add('ok');setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('ok')},2500);}
+
+function cmdHtml(text) {
+  const esc = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return `<div class="cmd" onclick="cc(this)">${esc}<span class="cp">Copy</span></div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VERIFY
+// ═══════════════════════════════════════════════════════════════
+function checkVerify(stepId, subIdx) {
+  const subId = `${stepId}-${subIdx}`;
+  const step = STEPS.find(s => s.id === stepId);
+  const sub = step.subs[subIdx];
+  const ta = document.getElementById('v-' + subId);
+  const res = document.getElementById('r-' + subId);
+  if (!ta || !res) return;
+
+  const output = ta.value.trim();
+  if (!output) {
+    res.innerHTML = '<div class="result fail">Paste the terminal output first</div>';
+    return;
+  }
+
+  if (sub.pass.test(output)) {
+    stepResults[subId] = 'pass';
+    res.innerHTML = `<div class="result pass">&#10003; ${sub.passMsg || 'Passed'}</div>`;
+
+    // If skipOnPass, auto-advance to next step
+    if (sub.skipOnPass) {
+      setTimeout(() => advanceStep(STEPS.indexOf(step)), 800);
+    } else {
+      // Re-render to show Next button if all verifies passed
+      setTimeout(render, 100);
+    }
+  } else {
+    stepResults[subId] = 'fail';
+    res.innerHTML = `<div class="result fail">&#10007; ${sub.failMsg || 'Verification failed'}</div>`;
+    if (sub.failHint) {
+      res.innerHTML += `<div class="result hint" style="margin-top:4px">${sub.failHint}</div>`;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ADVANCE
+// ═══════════════════════════════════════════════════════════════
+function advanceStep(idx) {
+  curStep = idx + 1;
+  if (curStep >= STEPS.length) {
+    render();
+    document.getElementById('fin').style.display = 'block';
+    setTimeout(() => document.getElementById('fin').scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+  } else {
+    render();
+    const next = document.querySelector('.step.cur');
+    if (next) setTimeout(() => next.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COPY
+// ═══════════════════════════════════════════════════════════════
+function cc(el) {
+  const text = el.textContent.replace(/Copy$/, '').replace(/Copied$/, '').trim();
+  const btn = el.querySelector('.cp');
+  navigator.clipboard.writeText(text).then(() => {
+    if (btn) { btn.textContent = 'Copied'; btn.classList.add('ok'); setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2500); }
   });
 }
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+render();
 </script>
 </body>
 </html>
