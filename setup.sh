@@ -452,6 +452,8 @@ cat > "$HOME_DIR/.claude/CLAUDE.md" << 'CEOF'
 # All user-specific config is loaded from Supabase via wt_session_start.
 
 ## RULE 0 — SESSION START SOP (mandatory, no exceptions)
+## Trigger: "Hello", "start session sop", or ANY first message in a new conversation.
+## When the user says ANYTHING to start a conversation, run this SOP automatically.
 
 1. Call wt_session_start({ project: "[current repo name or 'general']" })
    This returns your identity, session ID, prime directive, messages,
