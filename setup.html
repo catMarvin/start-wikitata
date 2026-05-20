@@ -1,6 +1,261 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- wikiTaTa cookie consent gate — injected by build.sh into every public/*.html
+     Handles: banner → Accept all / Reject all / Manage. Loads analytics tags
+     (Microsoft Clarity + Google Analytics 4) only after analytics consent is
+     granted. Implements Consent Mode v2 (default-denied → granted on Accept).
+     When the GTM container ID arrives, GA4 moves to live inside GTM and the
+     gtag.js loader here will be replaced with the GTM bootstrap.
+     Choice persists in localStorage as `wt-consent-v1`. -->
+<script>
+(function(){
+  var KEY         = 'wt-consent-v1';
+  var CLARITY_ID  = 'wtpvw7ylx2';
+  var GA4_ID      = 'G-D996NV3K4E';
+  var GTM_ID      = 'GTM-N4HQ4D7R'; // when set, GA4 lives inside this GTM container — see workspace
+  var BANNER_ID   = 'wt-consent-root';
+  var PILL_ID     = 'wt-consent-pill';
+
+  // ── Consent Mode v2 bootstrap — MUST run synchronously, before any tag loads.
+  // Default-denied for every category; user-explicit Accept upgrades analytics_storage.
+  // ad_* stays denied (no ads category in the banner) unless we add one later.
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = window.gtag || function(){ window.dataLayer.push(arguments); };
+  window.gtag('consent', 'default', {
+    'ad_storage':            'denied',
+    'ad_user_data':          'denied',
+    'ad_personalization':    'denied',
+    'analytics_storage':     'denied',
+    'functionality_storage': 'granted',
+    'security_storage':      'granted',
+    'wait_for_update':       500
+  });
+
+  // Consent Mode v2 ADVANCED: load gtag.js (or GTM) IMMEDIATELY in default-denied
+  // state so Google sees consent-denied pings + can model the data, AND Google's
+  // "Test installation" tool detects the tag. No cookies are set, no real
+  // measurement happens until the user clicks Accept and analytics_storage flips
+  // to 'granted'. This is the pattern Google recommends for sites with banners.
+  loadGoogleTags();
+  function loadGoogleTags(){
+    if (window.__wtGALoaded) return; window.__wtGALoaded = true;
+    if (GTM_ID) {
+      var s = document.createElement('script'); s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtm.js?id=' + GTM_ID;
+      (document.head || document.documentElement).appendChild(s);
+      window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+    } else if (GA4_ID) {
+      var s = document.createElement('script'); s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA4_ID;
+      (document.head || document.documentElement).appendChild(s);
+      window.gtag('js', new Date());
+      window.gtag('config', GA4_ID, { 'anonymize_ip': true });
+    }
+  }
+
+  function read(){
+    try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch(e){ return null; }
+  }
+  function write(obj){
+    try { localStorage.setItem(KEY, JSON.stringify(obj)); } catch(e){}
+  }
+
+  // ── Microsoft Clarity loader ──
+  function loadClarity(){
+    if (window.clarity) return;
+    (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", CLARITY_ID);
+  }
+
+  // gtag.js / GTM loader is `loadGoogleTags()` above — invoked synchronously at
+  // script-eval time so the tag is detectable by Google's Test Installation
+  // before the user makes a consent choice. Consent state controls behavior,
+  // not whether the tag exists on the page.
+  function grantAnalyticsConsent(){
+    window.gtag('consent', 'update', { 'analytics_storage': 'granted' });
+  }
+  function denyAnalyticsConsent(){
+    window.gtag('consent', 'update', { 'analytics_storage': 'denied' });
+  }
+
+  function purgeAnalytics(){
+    // Best-effort: tell tags to stop and clear known cookies.
+    // Full purge requires reload — banner surfaces that on Reject after prior Accept.
+    if (window.clarity) { try { window.clarity('consent', false); } catch(e){} }
+    denyAnalyticsConsent();
+    var names = [
+      // Microsoft Clarity
+      '_clck','_clsk','CLID','ANONCHK','MR','MUID','SM',
+      // Google Analytics 4 + gtag (the _ga_* one is GA4's per-property cookie)
+      '_ga','_gid','_gat','_gat_gtag_'+GA4_ID.replace(/-/g,'_'),'_ga_'+GA4_ID.replace(/^G-/,''),
+      // GTM internal cookies (if/when GTM lands)
+      '__gtm_id','__gtm_cs'
+    ];
+    names.forEach(function(n){
+      var hosts = ['', '; domain=.wikitata.com', '; domain=wikitata.com'];
+      hosts.forEach(function(h){
+        document.cookie = n + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/' + h;
+      });
+    });
+  }
+  function applyChoice(c){
+    // gtag.js is already loaded on every page in default-denied state (Consent
+    // Mode v2 advanced). Consent state just flips the gtag signal + decides
+    // whether Clarity loads (Clarity has no consent-mode equivalent).
+    if (c && c.analytics) {
+      grantAnalyticsConsent();
+      loadClarity();
+    } else {
+      purgeAnalytics();
+    }
+  }
+
+  // ── DOM templates ──
+  var STYLES = [
+    '#'+BANNER_ID+'{position:fixed;left:0;right:0;bottom:0;padding:16px;z-index:2147483646;font-family:"Inter Tight",system-ui,-apple-system,sans-serif;color:#F4F4F5;pointer-events:none}',
+    '#'+BANNER_ID+' .wt-c-card{pointer-events:auto;max-width:1100px;margin:0 auto;background:rgba(20,20,26,0.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(167,139,250,0.28);border-radius:14px;padding:18px 22px;box-shadow:0 16px 48px rgba(0,0,0,0.55),0 0 80px rgba(139,92,246,0.12);display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center}',
+    '#'+BANNER_ID+' .wt-c-msg{font-size:14px;line-height:1.5;color:#E4E4E7}',
+    '#'+BANNER_ID+' .wt-c-msg strong{color:#F4F4F5;font-weight:600}',
+    '#'+BANNER_ID+' .wt-c-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}',
+    '#'+BANNER_ID+' .wt-c-btn{background:transparent;color:#F4F4F5;border:1px solid rgba(167,139,250,0.40);border-radius:999px;padding:9px 18px;font-size:13px;font-family:inherit;font-weight:500;cursor:pointer;transition:background .15s ease,border-color .15s ease,color .15s ease;white-space:nowrap}',
+    '#'+BANNER_ID+' .wt-c-btn:hover{background:rgba(139,92,246,0.18);border-color:rgba(167,139,250,0.75)}',
+    '#'+BANNER_ID+' .wt-c-btn-primary{background:rgba(139,92,246,0.88);border-color:rgba(167,139,250,0.95);color:#fff}',
+    '#'+BANNER_ID+' .wt-c-btn-primary:hover{background:#8B5CF6}',
+    '#'+BANNER_ID+' .wt-c-btn-link{border-color:transparent;color:#A1A1AA;text-decoration:underline;text-underline-offset:3px;padding:9px 10px}',
+    '#'+BANNER_ID+' .wt-c-btn-link:hover{color:#F4F4F5;background:transparent}',
+    '#'+BANNER_ID+' .wt-c-manage{grid-column:1/-1;border-top:1px solid rgba(167,139,250,0.18);padding-top:14px;margin-top:6px;display:none;flex-direction:column;gap:10px}',
+    '#'+BANNER_ID+'.wt-c-managing .wt-c-manage{display:flex}',
+    '#'+BANNER_ID+' .wt-c-row{display:flex;align-items:flex-start;gap:12px;padding:8px 0}',
+    '#'+BANNER_ID+' .wt-c-row input[type=checkbox]{accent-color:#8B5CF6;width:18px;height:18px;margin-top:2px;flex:none}',
+    '#'+BANNER_ID+' .wt-c-row input[disabled]{opacity:0.55}',
+    '#'+BANNER_ID+' .wt-c-row-text{display:flex;flex-direction:column;gap:2px}',
+    '#'+BANNER_ID+' .wt-c-row-text b{font-size:13px;color:#F4F4F5;font-weight:600}',
+    '#'+BANNER_ID+' .wt-c-row-text span{font-size:12px;color:#A1A1AA;line-height:1.45}',
+    '#'+BANNER_ID+' .wt-c-save{align-self:flex-end;margin-top:4px}',
+    '#'+PILL_ID+'{position:fixed;left:14px;bottom:14px;width:36px;height:36px;border-radius:999px;background:rgba(20,20,26,0.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(167,139,250,0.30);color:#A1A1AA;font-size:15px;cursor:pointer;z-index:2147483645;opacity:0.65;transition:opacity .15s ease,border-color .15s ease;display:none;align-items:center;justify-content:center;padding:0;line-height:1}',
+    '#'+PILL_ID+':hover{opacity:1;border-color:rgba(167,139,250,0.75);color:#F4F4F5}',
+    '#'+PILL_ID+'.wt-c-show{display:flex}',
+    '@media (max-width:720px){#'+BANNER_ID+' .wt-c-card{grid-template-columns:1fr}#'+BANNER_ID+' .wt-c-actions{justify-content:stretch}#'+BANNER_ID+' .wt-c-actions .wt-c-btn{flex:1;text-align:center}}'
+  ].join('');
+
+  var BANNER_HTML =
+    '<div class="wt-c-card" role="dialog" aria-label="Cookie preferences" aria-live="polite">' +
+      '<div class="wt-c-msg"><strong>Cookies on wikiTaTa.</strong> Essential cookies keep the app working. Optional analytics (Google Analytics + Microsoft Clarity) help us understand how the product is used. You can change this any time.</div>' +
+      '<div class="wt-c-actions">' +
+        '<button class="wt-c-btn wt-c-btn-link" data-act="manage">Manage</button>' +
+        '<button class="wt-c-btn" data-act="reject">Reject all</button>' +
+        '<button class="wt-c-btn wt-c-btn-primary" data-act="accept">Accept all</button>' +
+      '</div>' +
+      '<div class="wt-c-manage">' +
+        '<div class="wt-c-row">' +
+          '<input type="checkbox" checked disabled aria-label="Essential cookies (always on)">' +
+          '<div class="wt-c-row-text"><b>Essential</b><span>Required for the site and signed-in app to function (auth, session, gate). Always on.</span></div>' +
+        '</div>' +
+        '<div class="wt-c-row">' +
+          '<input type="checkbox" data-toggle="analytics" id="wt-c-tog-analytics" aria-label="Analytics cookies">' +
+          '<div class="wt-c-row-text"><b>Analytics — Google Analytics 4 + Microsoft Clarity</b><span>GA4 (G-D996NV3K4E) for traffic + funnel measurement; Clarity for anonymous heatmaps + session replay. No PII collected; IP anonymized; ad personalization stays denied regardless.</span></div>' +
+        '</div>' +
+        '<button class="wt-c-btn wt-c-btn-primary wt-c-save" data-act="save">Save preferences</button>' +
+      '</div>' +
+    '</div>';
+
+  function ensureMounted(){
+    if (document.getElementById(BANNER_ID)) return;
+    var st = document.createElement('style'); st.setAttribute('data-wt-consent','1'); st.textContent = STYLES;
+    document.head.appendChild(st);
+    var root = document.createElement('div'); root.id = BANNER_ID; root.hidden = true; root.innerHTML = BANNER_HTML;
+    document.body.appendChild(root);
+    var pill = document.createElement('button'); pill.id = PILL_ID; pill.type = 'button';
+    pill.setAttribute('aria-label','Cookie preferences');
+    pill.title = 'Cookie preferences';
+    pill.textContent = '🍪';
+    document.body.appendChild(pill);
+
+    // Keep the pill clear of whatever sits at the bottom of the page (footer text,
+    // closing graphics). When the footer scrolls into view, lift the pill above it.
+    function positionPill(){
+      var base = 14;
+      var f = document.querySelector('footer');
+      if (f) {
+        var r = f.getBoundingClientRect();
+        var vh = window.innerHeight || document.documentElement.clientHeight;
+        pill.style.bottom = (r.top < vh - base) ? (vh - r.top + 10) + 'px' : base + 'px';
+      } else {
+        pill.style.bottom = base + 'px';
+      }
+    }
+    window.addEventListener('scroll', positionPill, { passive: true });
+    window.addEventListener('resize', positionPill);
+    positionPill();
+
+    root.addEventListener('click', function(ev){
+      var t = ev.target.closest('[data-act]'); if (!t) return;
+      var act = t.getAttribute('data-act');
+      if (act === 'accept') return finish({ v:1, essential:true, analytics:true });
+      if (act === 'reject') return finish({ v:1, essential:true, analytics:false });
+      if (act === 'manage') { root.classList.toggle('wt-c-managing'); return; }
+      if (act === 'save')   {
+        var an = root.querySelector('#wt-c-tog-analytics').checked;
+        return finish({ v:1, essential:true, analytics:an });
+      }
+    });
+
+    pill.addEventListener('click', function(){
+      pill.classList.remove('wt-c-show');
+      var cur = read();
+      root.querySelector('#wt-c-tog-analytics').checked = !!(cur && cur.analytics);
+      root.classList.add('wt-c-managing');
+      root.hidden = false;
+    });
+  }
+
+  function showBanner(){
+    ensureMounted();
+    var root = document.getElementById(BANNER_ID);
+    root.classList.remove('wt-c-managing');
+    root.hidden = false;
+    document.getElementById(PILL_ID).classList.remove('wt-c-show');
+  }
+  function hideBanner(){
+    var root = document.getElementById(BANNER_ID);
+    if (root) { root.hidden = true; root.classList.remove('wt-c-managing'); }
+    var pill = document.getElementById(PILL_ID);
+    if (pill) pill.classList.add('wt-c-show');
+  }
+  function finish(choice){
+    choice.ts = new Date().toISOString();
+    write(choice);
+    applyChoice(choice);
+    hideBanner();
+  }
+
+  function init(){
+    ensureMounted();
+    var stored = read();
+    if (stored && stored.v === 1) {
+      applyChoice(stored);
+      // Show the pill so users can change their mind later.
+      var pill = document.getElementById(PILL_ID);
+      if (pill) pill.classList.add('wt-c-show');
+    } else {
+      showBanner();
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  // Public API — call wtConsent.show() from anywhere to re-open the banner.
+  window.wtConsent = { show: showBanner, current: read, KEY: KEY };
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>wikiTaTa — Developer Setup</title>
