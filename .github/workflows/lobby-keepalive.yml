@@ -1,0 +1,36 @@
+name: lobby-keepalive
+
+# Keeps the free-tier lobby Supabase (mjdkuxfddfihqkknfxrl) from auto-pausing.
+# A free project pauses after ~7 days with no API requests; pg_cron can't self-rescue
+# (a paused DB stops pg_cron too), so the ping must come from OUTSIDE.
+# NOTE: GitHub disables scheduled workflows after 60 days of no repo commits.
+# Long-term this moves to a Vercel cron once start.wikitata.com is deployed.
+# LOBBY_KEY is a Supabase *publishable* key (client-side by design) — not a secret.
+
+on:
+  schedule:
+    - cron: '17 9 * * *'   # daily 09:17 UTC
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping lobby Supabase REST (executes a Postgres query → counts as activity)
+        env:
+          LOBBY_URL: https://mjdkuxfddfihqkknfxrl.supabase.co
+          LOBBY_KEY: sb_publishable_tQGS3ws4EztkCVxulXP4Ng_dfmoW-iY
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /tmp/resp.txt -w '%{http_code}' \
+            -H "apikey: ${LOBBY_KEY}" \
+            -H "Authorization: Bearer ${LOBBY_KEY}" \
+            "${LOBBY_URL}/rest/v1/setup_users?select=count")
+          echo "HTTP ${code}"
+          cat /tmp/resp.txt
+          # Any 2xx/4xx that reaches PostgREST counts as project activity; only a
+          # network/5xx failure is a real problem.
+          case "$code" in
+            2*|4*) echo "lobby reachable — pause timer reset" ;;
+            *) echo "lobby ping FAILED (code ${code})"; exit 1 ;;
+          esac
