@@ -357,15 +357,18 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px}
 .help-btn{flex:1;background:var(--sf);border:1px solid var(--bd);color:var(--tx);padding:11px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--f);text-decoration:none;text-align:center;transition:all .15s}
 .help-btn:hover{border-color:var(--acc);color:var(--acc)}
 .help-form{display:none;text-align:left;margin-top:14px;animation:fadeUp .3s ease}
-.help-form h3{font-size:15px;font-weight:600;margin-bottom:12px;color:var(--tx)}
-.help-form input,.help-form textarea{width:100%;background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;color:var(--tx);font-size:13px;font-family:var(--f);outline:none;margin-bottom:10px}
+.help-form h3{font-size:16px;font-weight:600;margin-bottom:12px;color:var(--tx)}
+.help-form input,.help-form textarea{width:100%;background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;color:var(--tx);font-size:14px;font-family:var(--f);outline:none;margin-bottom:10px}
 .help-form input:focus,.help-form textarea:focus{border-color:var(--acc)}
 .help-form textarea{resize:vertical}
-.diag{background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:12px}
-.diag-head{font-size:11px;color:var(--tx2);font-weight:600}
-.diag-toggle{color:var(--acc);cursor:pointer;margin-left:6px;font-weight:500}
-.diag-body{display:none;white-space:pre-wrap;word-break:break-all;font-family:var(--m);font-size:10px;color:var(--tx2);margin:8px 0 0;line-height:1.5}
-.diag-note{font-size:10px;color:var(--tx2);line-height:1.4;margin:8px 0 0}
+/* Diagnostics opt-in (off by default; governs both email + form paths) */
+.diag-optin{display:flex;align-items:flex-start;gap:10px;text-align:left;margin:16px 0 6px;cursor:pointer;font-size:14px;color:var(--tx);line-height:1.45}
+.diag-optin input{width:18px;height:18px;margin-top:1px;flex:none;accent-color:var(--acc);cursor:pointer}
+.diag-status{font-size:14px;line-height:1.5;color:var(--tx2);margin:0 0 4px;text-align:left}
+.diag-status.on{color:var(--grn)}
+.diag-preview{text-align:left;background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:12px 14px;margin:8px 0 0}
+.diag-preview-head{font-size:13px;color:var(--tx2);font-weight:600;margin-bottom:8px}
+.diag-body{white-space:pre-wrap;word-break:break-all;font-family:var(--m);font-size:13px;color:var(--tx);margin:0;line-height:1.6}
 </style>
 </head>
 <body>
@@ -386,20 +389,27 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px}
       <div class="gate-msg" id="gate-msg"></div>
     </div>
     <p class="note">Part of our early test group? You should have received a username and invite code.<br>Need help, or don't have a code yet?</p>
+
+    <label class="diag-optin">
+      <input type="checkbox" id="h-diag-optin" onchange="diagOptinChanged()">
+      <span>Include diagnostic info to help us troubleshoot</span>
+    </label>
+    <p class="diag-status" id="diag-status">Off &mdash; no diagnostic info will be sent. Check the box to include it. It never contains your password, and your invite code is masked.</p>
+    <div class="diag-preview" id="diag-preview" style="display:none">
+      <div class="diag-preview-head">This is exactly what will be included:</div>
+      <pre class="diag-body" id="diag-body"></pre>
+    </div>
+
     <div class="help-choice">
-      <a class="help-btn" href="mailto:hello@wikitata.com?subject=wikiTaTa%20early%20access">&#9993; Send email</a>
+      <a class="help-btn" id="h-email-btn" href="#" onclick="return sendHelpEmail()">&#9993; Send email</a>
       <button class="help-btn" type="button" onclick="toggleHelpForm()">&#9999; Use form</button>
     </div>
+
     <form class="help-form" id="help-form" onsubmit="return submitHelp(event)">
       <h3>Get help!</h3>
       <input type="text" id="h-name" placeholder="Your name" autocomplete="name">
       <input type="email" id="h-email" placeholder="Your email" autocomplete="email" required>
       <textarea id="h-issue" rows="4" placeholder="Issues experienced &mdash; what happened, and what you expected" required></textarea>
-      <div class="diag">
-        <div class="diag-head">&#128712; Diagnostic info<span class="diag-toggle" onclick="toggleDiag(event)">show</span></div>
-        <pre class="diag-body" id="diag-body"></pre>
-        <p class="diag-note">This troubleshooting data is sent with your message so we can fix the issue faster. It never includes your password, and your invite code is masked. Sending it is optional but helps a lot.</p>
-      </div>
       <button class="gate-btn" type="submit" id="h-submit">Send to the wikiTaTa team</button>
       <div class="gate-msg" id="help-msg"></div>
     </form>
@@ -645,17 +655,37 @@ function buildDiag(){
     'referrer:        ' + (document.referrer || '(direct)')
   ].join('\n');
 }
+function diagOptedIn(){ var c = document.getElementById('h-diag-optin'); return !!(c && c.checked); }
+function diagOptinChanged(){
+  var on = diagOptedIn();
+  var status = document.getElementById('diag-status');
+  var preview = document.getElementById('diag-preview');
+  if (on){
+    document.getElementById('diag-body').textContent = buildDiag();
+    preview.style.display = 'block';
+    status.className = 'diag-status on';
+    status.textContent = 'On — the diagnostic info below WILL be included with your message.';
+  } else {
+    preview.style.display = 'none';
+    status.className = 'diag-status';
+    status.innerHTML = 'Off — no diagnostic info will be sent. Check the box to include it. It never contains your password, and your invite code is masked.';
+  }
+}
 function toggleHelpForm(){
   var f = document.getElementById('help-form');
-  var open = f.style.display === 'block';
-  f.style.display = open ? 'none' : 'block';
-  if (!open) document.getElementById('diag-body').textContent = buildDiag();
+  f.style.display = (f.style.display === 'block') ? 'none' : 'block';
 }
-function toggleDiag(e){
-  var b = document.getElementById('diag-body');
-  var open = b.style.display === 'block';
-  b.style.display = open ? 'none' : 'block';
-  e.target.textContent = open ? 'show' : 'hide';
+function sendHelpEmail(){
+  var body = 'Describe the issue you are experiencing here:\n\n\n';
+  if (diagOptedIn()) {
+    body += '\n--- Diagnostic info (you chose to include this) ---\n' + buildDiag() + '\n';
+  } else {
+    body += '\n(No diagnostic info included. To help us troubleshoot faster, you can go back and tick "Include diagnostic info" before sending.)\n';
+  }
+  window.location.href = 'mailto:hello@wikitata.com?subject=' +
+    encodeURIComponent('wikiTaTa early access — help') +
+    '&body=' + encodeURIComponent(body);
+  return false;
 }
 async function submitHelp(e){
   e.preventDefault();
@@ -665,7 +695,7 @@ async function submitHelp(e){
   var email = hv('h-email');
   var payload = {
     name: hv('h-name'), email: email, issue: hv('h-issue'),
-    diagnostics: buildDiag(),
+    diagnostics: diagOptedIn() ? buildDiag() : '(user chose not to include diagnostics)',
     _replyto: email, _subject: 'wikiTaTa help request — ' + (hv('h-name') || email)
   };
   try {
