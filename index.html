@@ -260,25 +260,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>wikiTaTa — Get Started</title>
 <style>
-:root{--bg:#0a0a0f;--sf:#111118;--sf2:#18181f;--bd:#252530;--tx:#e0e0e8;--tx2:#777788;--acc:#6c8aff;--grn:#4ade80;--grn-d:rgba(74,222,128,.12);--gold:#d4a24e;--red:#f87171;--red-d:rgba(248,113,113,.12);--code:#0d0d16;--f:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;--m:'SF Mono','Fira Code',Consolas,monospace}
+:root{--bg:#0a0a0f;--sf:#111118;--sf2:#18181f;--bd:#252530;--tx:#e0e0e8;--tx2:#a3a3b5;--acc:#6c8aff;--grn:#4ade80;--grn-d:rgba(74,222,128,.12);--gold:#d4a24e;--red:#f87171;--red-d:rgba(248,113,113,.12);--code:#0d0d16;--f:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;--m:'SF Mono','Fira Code',Consolas,monospace}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;display:flex;align-items:center;justify-content:center}
 .c{max-width:480px;width:100%;padding:40px 24px;text-align:center}
 h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px}
-.sub{color:var(--tx2);font-size:14px;margin-bottom:36px;line-height:1.5}
-.ver{position:fixed;top:12px;right:16px;font-size:11px;font-weight:600;color:var(--acc);font-family:var(--m);letter-spacing:.5px}
+.sub{color:var(--tx2);font-size:15px;margin-bottom:36px;line-height:1.5}
+.ver{position:fixed;top:12px;right:16px;font-size:15px;font-weight:600;color:var(--acc);font-family:var(--m);letter-spacing:.5px}
 
 /* Gate form */
 .gate{text-align:left;margin-bottom:24px}
-.gate label{display:block;font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-.gate input{width:100%;background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:11px 14px;color:var(--tx);font-size:14px;font-family:var(--f);outline:none;margin-bottom:16px}
+.gate label{display:block;font-size:15px;font-weight:600;color:var(--tx);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.gate .label-hint{display:block;font-size:15px;font-weight:400;color:var(--tx2);text-transform:none;letter-spacing:0;margin-top:2px;line-height:1.4}
+.gate input{width:100%;background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:11px 14px;color:var(--tx);font-size:15px;font-family:var(--f);outline:none;margin-bottom:16px}
 .gate input:focus{border-color:var(--acc)}
 .gate input::placeholder{color:rgba(255,255,255,.2)}
 
 .gate-btn{width:100%;background:var(--acc);color:#fff;border:none;padding:13px 0;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:var(--f);transition:all .15s}
 .gate-btn:hover{filter:brightness(1.1)} .gate-btn:disabled{opacity:.4;cursor:default;filter:none}
 
-.gate-msg{margin-top:12px;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;display:none}
+.gate-msg{margin-top:12px;padding:10px 14px;border-radius:8px;font-size:15px;font-weight:500;display:none}
 .gate-msg.err{display:block;background:var(--red-d);color:var(--red)}
 .gate-msg.ok{display:block;background:var(--grn-d);color:var(--grn)}
 
@@ -289,9 +290,9 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px}
 
 /* Command block */
 .cmd-wrap{text-align:left;margin:20px 0}
-.cmd{background:var(--code);border:1px solid var(--bd);border-radius:8px 8px 0 0;padding:12px 14px;font-family:var(--m);font-size:12px;color:var(--grn);line-height:1.5;white-space:pre-wrap;word-break:break-all}
+.cmd{background:var(--code);border:1px solid var(--bd);border-radius:8px 8px 0 0;padding:12px 14px;font-family:var(--m);font-size:15px;color:var(--grn);line-height:1.5;white-space:pre-wrap;word-break:break-all}
 .cmd-bar{display:flex;border:1px solid var(--bd);border-top:none;border-radius:0 0 8px 8px;overflow:hidden}
-.cmd-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0;font-size:12px;font-weight:600;font-family:var(--f);cursor:pointer;border:none;background:var(--sf2);color:var(--tx2);transition:all .25s;border-right:1px solid var(--bd)}
+.cmd-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0;font-size:15px;font-weight:600;font-family:var(--f);cursor:pointer;border:none;background:var(--sf2);color:var(--tx2);transition:all .25s;border-right:1px solid var(--bd)}
 .cmd-btn:last-child{border-right:none}
 .cmd-btn:hover:not(.disabled){background:rgba(255,255,255,.04);color:var(--tx)}
 .cmd-btn.disabled{opacity:.25;pointer-events:none}
@@ -307,11 +308,11 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px}
 
 /* Steps preview */
 .steps-preview{text-align:left;margin:24px 0;padding:20px;background:var(--sf);border:1px solid var(--bd);border-radius:10px}
-.steps-preview h3{font-size:12px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;font-weight:600}
+.steps-preview h3{font-size:15px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;font-weight:600}
 .sp-item{display:flex;gap:10px;align-items:center;margin-bottom:8px}
 .sp-item:last-child{margin-bottom:0}
 .sp-num{width:20px;height:20px;border-radius:50%;background:var(--bd);color:var(--tx2);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
-.sp-txt{font-size:12px;color:var(--tx2)}
+.sp-txt{font-size:15px;color:var(--tx2)}
 
 /* Waiting state */
 .waiting{display:none;text-align:center;padding:32px 0;animation:fadeUp .4s ease}
@@ -323,7 +324,7 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px}
 .complete h2{font-size:22px;color:var(--grn);margin-bottom:8px}
 
 /* Helpers */
-.note{font-size:11px;color:var(--tx2);line-height:1.5;margin-top:16px}
+.note{font-size:15px;color:var(--tx2);line-height:1.55;margin-top:16px}
 .note b{color:var(--tx)}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
@@ -331,8 +332,8 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px}
 .prog-step{padding:14px 16px;margin-bottom:2px;border-radius:8px;border:1px solid transparent;transition:all .3s}
 .prog-step .ps-head{display:flex;align-items:center;gap:10px}
 .prog-step .ps-icon{width:22px;height:22px;border-radius:50%;background:var(--bd);color:var(--tx2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;transition:all .3s}
-.prog-step .ps-title{font-size:13px;font-weight:500;color:var(--tx2);transition:color .3s}
-.prog-step .ps-body{display:none;font-size:12px;color:var(--tx2);line-height:1.6;margin-top:8px;padding-left:32px}
+.prog-step .ps-title{font-size:15px;font-weight:500;color:var(--tx2);transition:color .3s}
+.prog-step .ps-body{display:none;font-size:15px;color:var(--tx2);line-height:1.6;margin-top:8px;padding-left:32px}
 .prog-step .ps-body b{color:var(--tx);font-weight:500}
 .prog-step.active{background:var(--sf);border-color:var(--bd)}
 .prog-step.active .ps-icon{background:var(--acc);color:#fff}
@@ -352,27 +353,41 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px}
 /* wikiTaTa wordmark — two T's in accent (standing brand rule) */
 .tt{color:var(--acc)}
 
+/* Section divider between the verify-gate and the help block (unrelated concerns) */
+.divider{border:none;border-top:1px solid var(--bd);margin:36px 0 28px}
+
+/* Help section */
+.help-section{text-align:left}
+.help-head{font-size:18px;font-weight:600;color:var(--tx);margin-bottom:6px;text-align:left}
+.help-intro{font-size:15px;color:var(--tx2);line-height:1.55;margin:0 0 4px;text-align:left}
+
 /* Help choice + form */
 .help-choice{display:flex;gap:10px;margin:14px 0 0}
-.help-btn{flex:1;background:var(--sf);border:1px solid var(--bd);color:var(--tx);padding:11px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--f);text-decoration:none;text-align:center;transition:all .15s}
+.help-btn{flex:1;background:var(--sf);border:1px solid var(--bd);color:var(--tx);padding:11px;border-radius:8px;font-size:15px;font-weight:500;cursor:pointer;font-family:var(--f);text-decoration:none;text-align:center;transition:all .15s}
 .help-btn:hover{border-color:var(--acc);color:var(--acc)}
 .help-form{display:none;text-align:left;margin-top:14px;animation:fadeUp .3s ease}
-.help-form h3{font-size:16px;font-weight:600;margin-bottom:12px;color:var(--tx)}
-.help-form input,.help-form textarea{width:100%;background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;color:var(--tx);font-size:14px;font-family:var(--f);outline:none;margin-bottom:10px}
+.help-form h3{font-size:17px;font-weight:600;margin-bottom:12px;color:var(--tx)}
+.help-form input,.help-form textarea{width:100%;background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;color:var(--tx);font-size:15px;font-family:var(--f);outline:none;margin-bottom:10px}
 .help-form input:focus,.help-form textarea:focus{border-color:var(--acc)}
 .help-form textarea{resize:vertical}
 /* Diagnostics opt-in (off by default; governs both email + form paths) */
-.diag-optin{display:flex;align-items:flex-start;gap:10px;text-align:left;margin:16px 0 6px;cursor:pointer;font-size:14px;color:var(--tx);line-height:1.45}
+.diag-optin{display:flex;align-items:flex-start;gap:10px;text-align:left;margin:16px 0 6px;cursor:pointer;font-size:15px;color:var(--tx);line-height:1.45}
 .diag-optin input{width:18px;height:18px;margin-top:1px;flex:none;accent-color:var(--acc);cursor:pointer}
-.diag-status{font-size:14px;line-height:1.5;color:var(--tx2);margin:0 0 4px;text-align:left}
+.diag-status{font-size:15px;line-height:1.5;color:var(--tx2);margin:0 0 4px;text-align:left}
 .diag-status.on{color:var(--grn)}
 .diag-preview{text-align:left;background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:12px 14px;margin:8px 0 0}
-.diag-preview-head{font-size:13px;color:var(--tx2);font-weight:600;margin-bottom:8px}
-.diag-body{white-space:pre-wrap;word-break:break-all;font-family:var(--m);font-size:13px;color:var(--tx);margin:0;line-height:1.6}
+.diag-preview-head{font-size:15px;color:var(--tx2);font-weight:600;margin-bottom:8px}
+.diag-body{white-space:pre-wrap;word-break:break-all;font-family:var(--m);font-size:15px;color:var(--tx);margin:0;line-height:1.6}
+
+/* Footer */
+.site-footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--bd);font-size:15px;color:var(--tx2);line-height:1.6;text-align:center}
+.site-footer a{color:var(--tx2);text-decoration:none;transition:color .15s}
+.site-footer a:hover{color:var(--acc)}
+.site-footer .sep{opacity:.5;margin:0 8px}
 </style>
 </head>
 <body>
-<div class="ver">v0.4.0</div>
+<div class="ver" id="ver" title="wikiTaTa app version"></div>
 
 <div class="c">
   <h1>wiki<span class="tt">T</span>a<span class="tt">T</span>a</h1>
@@ -381,38 +396,45 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px}
   <!-- ═══ GATE ═══ -->
   <div id="gate-view">
     <div class="gate">
-      <label>Username</label>
-      <input type="text" id="inp-user" placeholder="assigned by wikiTaTa team" autocomplete="off" spellcheck="false">
+      <label>Username<span class="label-hint">Your email address — you can change it later in Settings.</span></label>
+      <input type="text" id="inp-user" placeholder="your email address" autocomplete="username" spellcheck="false">
       <label>Invite Code</label>
-      <input type="text" id="inp-code" placeholder="from your invite" autocomplete="off" spellcheck="false">
+      <input type="text" id="inp-code" placeholder="from your invite email" autocomplete="off" spellcheck="false">
       <button class="gate-btn" id="gate-btn" onclick="verifyInvite()">Verify &amp; Continue</button>
       <div class="gate-msg" id="gate-msg"></div>
     </div>
-    <p class="note">Part of our early test group? You should have received a username and invite code.<br>Need help, or don't have a code yet?</p>
+    <p class="note">Part of our early test group? You should have received a username and invite code in your invite email — and they're filled in for you automatically when you open the link.</p>
 
-    <label class="diag-optin">
-      <input type="checkbox" id="h-diag-optin" onchange="diagOptinChanged()">
-      <span>Include diagnostic info to help us troubleshoot</span>
-    </label>
-    <p class="diag-status" id="diag-status">Off &mdash; no diagnostic info will be sent. Check the box to include it. It never contains your password, and your invite code is masked.</p>
-    <div class="diag-preview" id="diag-preview" style="display:none">
-      <div class="diag-preview-head">This is exactly what will be included:</div>
-      <pre class="diag-body" id="diag-body"></pre>
+    <hr class="divider">
+
+    <div class="help-section">
+      <h2 class="help-head">Need help, or don't have a code yet?</h2>
+      <p class="help-intro">Having trouble? Send us a note below and we'll help. Don't have a code but want in? <a href="https://wikitata.com/contact.html">Tell us about yourself &rarr;</a></p>
+
+      <label class="diag-optin">
+        <input type="checkbox" id="h-diag-optin" onchange="diagOptinChanged()">
+        <span>Include diagnostics so we can expedite a solution</span>
+      </label>
+      <p class="diag-status" id="diag-status">Off &mdash; no diagnostics will be sent. If you're having a problem and want help, check the box: it includes your browser, the page you're on, and a <b>masked</b> invite code so we can pinpoint the issue faster. It never includes your password.</p>
+      <div class="diag-preview" id="diag-preview" style="display:none">
+        <div class="diag-preview-head">This is exactly what will be included:</div>
+        <pre class="diag-body" id="diag-body"></pre>
+      </div>
+
+      <div class="help-choice">
+        <a class="help-btn" id="h-email-btn" href="#" onclick="return sendHelpEmail()">&#9993; Send email</a>
+        <button class="help-btn" type="button" onclick="toggleHelpForm()">&#9999; Use form</button>
+      </div>
+
+      <form class="help-form" id="help-form" onsubmit="return submitHelp(event)">
+        <h3>Get help!</h3>
+        <input type="text" id="h-name" placeholder="Your name" autocomplete="name">
+        <input type="email" id="h-email" placeholder="Your email" autocomplete="email" required>
+        <textarea id="h-issue" rows="4" placeholder="Issues experienced &mdash; what happened, and what you expected" required></textarea>
+        <button class="gate-btn" type="submit" id="h-submit">Send to the wikiTaTa team</button>
+        <div class="gate-msg" id="help-msg"></div>
+      </form>
     </div>
-
-    <div class="help-choice">
-      <a class="help-btn" id="h-email-btn" href="#" onclick="return sendHelpEmail()">&#9993; Send email</a>
-      <button class="help-btn" type="button" onclick="toggleHelpForm()">&#9999; Use form</button>
-    </div>
-
-    <form class="help-form" id="help-form" onsubmit="return submitHelp(event)">
-      <h3>Get help!</h3>
-      <input type="text" id="h-name" placeholder="Your name" autocomplete="name">
-      <input type="email" id="h-email" placeholder="Your email" autocomplete="email" required>
-      <textarea id="h-issue" rows="4" placeholder="Issues experienced &mdash; what happened, and what you expected" required></textarea>
-      <button class="gate-btn" type="submit" id="h-submit">Send to the wikiTaTa team</button>
-      <div class="gate-msg" id="help-msg"></div>
-    </form>
   </div>
 
   <!-- ═══ WELCOME (post-auth) ═══ -->
@@ -539,6 +561,12 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px}
       Next time, just open Terminal and type <code style="background:var(--code);padding:2px 6px;border-radius:4px;font-family:var(--m);font-size:11px">claude</code>.
     </p>
   </div>
+
+  <footer class="site-footer">
+    <a href="https://wikitata.com/about.html">About</a><span class="sep">·</span><a href="https://wikitata.com/privacy.html">Privacy</a><span class="sep">·</span><a href="https://wikitata.com/terms.html">Terms</a><span class="sep">·</span><a href="https://wikitata.com/contact.html">Contact</a>
+    <div style="margin-top:8px">wiki<span class="tt">T</span>a<span class="tt">T</span>a, a TMC555, LLC enterprise</div>
+    <div style="margin-top:4px">&copy; <span id="footer-year"></span> wikiTaTa</div>
+  </footer>
 </div>
 
 <!-- Terminal modal -->
@@ -668,7 +696,7 @@ function diagOptinChanged(){
   } else {
     preview.style.display = 'none';
     status.className = 'diag-status';
-    status.innerHTML = 'Off — no diagnostic info will be sent. Check the box to include it. It never contains your password, and your invite code is masked.';
+    status.innerHTML = "Off — no diagnostics will be sent. If you're having a problem and want help, check the box: it includes your browser, the page you're on, and a <b>masked</b> invite code so we can pinpoint the issue faster. It never includes your password.";
   }
 }
 function toggleHelpForm(){
@@ -834,6 +862,33 @@ if (params.get('done')) {
   const doneUser = params.get('user') || verifiedUser || 'there';
   document.getElementById('complete-user').textContent = 'Welcome to wikiTaTa, ' + doneUser + '.';
 }
+
+// ── Magic-link prefill: ?u=<username>&code=<CODE> (baked into the invite email link) ──
+(function () {
+  var u = params.get('u');
+  var code = params.get('code');
+  var inpUser = document.getElementById('inp-user');
+  var inpCode = document.getElementById('inp-code');
+  if (u && inpUser) inpUser.value = u;                       // username we assigned
+  if (code && inpCode) inpCode.value = code.toUpperCase();   // prefilled, still editable
+  if (inpUser && inpCode) {
+    if (u && !code) inpCode.focus();
+    else if (u && code) { var b = document.getElementById('gate-btn'); if (b) b.focus(); }
+  }
+})();
+
+// ── Footer year ──
+(function () { var y = document.getElementById('footer-year'); if (y) y.textContent = new Date().getFullYear(); })();
+
+// ── Version badge — single source of truth is the wikiTaTa app VERSION, published at /version.json by the app build ──
+(function () {
+  var el = document.getElementById('ver');
+  if (!el) return;
+  fetch('https://delightful.wikitata.com/version.json', { cache: 'no-store' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) { if (j && j.version) el.textContent = 'v' + j.version; })
+    .catch(function () {});
+})();
 </script>
 </body>
 </html>
