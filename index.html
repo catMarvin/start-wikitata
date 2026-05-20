@@ -93,13 +93,31 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px}
 .modal{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:32px 28px;max-width:460px;width:90%;text-align:center}
 .keys{display:flex;align-items:center;justify-content:center;gap:6px;margin:10px 0}
 .key{background:var(--bd);color:var(--tx);padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.06);border-bottom-width:3px;min-width:28px;text-align:center}
+
+/* wikiTaTa wordmark — two T's in accent (standing brand rule) */
+.tt{color:var(--acc)}
+
+/* Help choice + form */
+.help-choice{display:flex;gap:10px;margin:14px 0 0}
+.help-btn{flex:1;background:var(--sf);border:1px solid var(--bd);color:var(--tx);padding:11px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--f);text-decoration:none;text-align:center;transition:all .15s}
+.help-btn:hover{border-color:var(--acc);color:var(--acc)}
+.help-form{display:none;text-align:left;margin-top:14px;animation:fadeUp .3s ease}
+.help-form h3{font-size:15px;font-weight:600;margin-bottom:12px;color:var(--tx)}
+.help-form input,.help-form textarea{width:100%;background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;color:var(--tx);font-size:13px;font-family:var(--f);outline:none;margin-bottom:10px}
+.help-form input:focus,.help-form textarea:focus{border-color:var(--acc)}
+.help-form textarea{resize:vertical}
+.diag{background:var(--code);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:12px}
+.diag-head{font-size:11px;color:var(--tx2);font-weight:600}
+.diag-toggle{color:var(--acc);cursor:pointer;margin-left:6px;font-weight:500}
+.diag-body{display:none;white-space:pre-wrap;word-break:break-all;font-family:var(--m);font-size:10px;color:var(--tx2);margin:8px 0 0;line-height:1.5}
+.diag-note{font-size:10px;color:var(--tx2);line-height:1.4;margin:8px 0 0}
 </style>
 </head>
 <body>
 <div class="ver">v0.4.0</div>
 
 <div class="c">
-  <h1>wikiTaTa</h1>
+  <h1>wiki<span class="tt">T</span>a<span class="tt">T</span>a</h1>
   <p class="sub">Developer setup for your Mac.</p>
 
   <!-- ═══ GATE ═══ -->
@@ -112,7 +130,24 @@ h1{font-size:30px;font-weight:600;letter-spacing:-.5px;margin-bottom:6px}
       <button class="gate-btn" id="gate-btn" onclick="verifyInvite()">Verify &amp; Continue</button>
       <div class="gate-msg" id="gate-msg"></div>
     </div>
-    <p class="note">Part of our early test group? You should have received a username and invite code. If not, reach out to the wikiTaTa team.</p>
+    <p class="note">Part of our early test group? You should have received a username and invite code.<br>Need help, or don't have a code yet?</p>
+    <div class="help-choice">
+      <a class="help-btn" href="mailto:hello@wikitata.com?subject=wikiTaTa%20early%20access">&#9993; Send email</a>
+      <button class="help-btn" type="button" onclick="toggleHelpForm()">&#9999; Use form</button>
+    </div>
+    <form class="help-form" id="help-form" onsubmit="return submitHelp(event)">
+      <h3>Get help!</h3>
+      <input type="text" id="h-name" placeholder="Your name" autocomplete="name">
+      <input type="email" id="h-email" placeholder="Your email" autocomplete="email" required>
+      <textarea id="h-issue" rows="4" placeholder="Issues experienced &mdash; what happened, and what you expected" required></textarea>
+      <div class="diag">
+        <div class="diag-head">&#128712; Diagnostic info<span class="diag-toggle" onclick="toggleDiag(event)">show</span></div>
+        <pre class="diag-body" id="diag-body"></pre>
+        <p class="diag-note">This troubleshooting data is sent with your message so we can fix the issue faster. It never includes your password, and your invite code is masked. Sending it is optional but helps a lot.</p>
+      </div>
+      <button class="gate-btn" type="submit" id="h-submit">Send to the wikiTaTa team</button>
+      <div class="gate-msg" id="help-msg"></div>
+    </form>
   </div>
 
   <!-- ═══ WELCOME (post-auth) ═══ -->
@@ -335,6 +370,63 @@ function showWelcome() {
 }
 
 // ── Copy / Run ──────────────────────────────────────────────────────────────
+
+// ── Help / get-help form + privacy-preserving diagnostics ──────────────────
+function hv(id){ var e = document.getElementById(id); return e ? e.value.trim() : ''; }
+function buildDiag(){
+  var code = hv('inp-code');
+  var maskedCode = code ? (code.slice(0,2) + '••••' + code.slice(-2)) : '(none entered)';
+  var lastMsg = (document.getElementById('gate-msg') || {}).textContent || '(none)';
+  return [
+    'page:            ' + location.href.replace(/code=[^&]*/i, 'code=••••'),
+    'username tried:  ' + (hv('inp-user') || '(none)'),
+    'invite code:     ' + maskedCode + '   (masked for privacy)',
+    'last gate msg:   ' + lastMsg,
+    'browser:         ' + navigator.userAgent,
+    'language:        ' + navigator.language,
+    'screen:          ' + screen.width + 'x' + screen.height,
+    'online:          ' + navigator.onLine,
+    'time:            ' + new Date().toISOString(),
+    'referrer:        ' + (document.referrer || '(direct)')
+  ].join('\n');
+}
+function toggleHelpForm(){
+  var f = document.getElementById('help-form');
+  var open = f.style.display === 'block';
+  f.style.display = open ? 'none' : 'block';
+  if (!open) document.getElementById('diag-body').textContent = buildDiag();
+}
+function toggleDiag(e){
+  var b = document.getElementById('diag-body');
+  var open = b.style.display === 'block';
+  b.style.display = open ? 'none' : 'block';
+  e.target.textContent = open ? 'show' : 'hide';
+}
+async function submitHelp(e){
+  e.preventDefault();
+  var btn = document.getElementById('h-submit');
+  var msg = document.getElementById('help-msg');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  var email = hv('h-email');
+  var payload = {
+    name: hv('h-name'), email: email, issue: hv('h-issue'),
+    diagnostics: buildDiag(),
+    _replyto: email, _subject: 'wikiTaTa help request — ' + (hv('h-name') || email)
+  };
+  try {
+    var r = await fetch('https://formspree.io/f/mojpezob', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) throw new Error('bad status');
+    msg.className = 'gate-msg ok'; msg.textContent = 'Sent — we’ll reply to ' + email + ' shortly.';
+    document.getElementById('help-form').reset();
+  } catch (err) {
+    msg.className = 'gate-msg err'; msg.textContent = 'Couldn’t send — please email hello@wikitata.com directly.';
+  }
+  btn.disabled = false; btn.textContent = 'Send to the wikiTaTa team';
+  return false;
+}
 
 let selectedRole = null;
 function pickRole(el, role) {
