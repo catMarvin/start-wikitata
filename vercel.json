@@ -3,5 +3,8 @@
   "framework": null,
   "installCommand": null,
   "buildCommand": null,
-  "outputDirectory": "."
+  "outputDirectory": ".",
+  "rewrites": [
+    { "source": "/services", "destination": "/services.html" }
+  ]
 }
