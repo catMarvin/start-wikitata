@@ -371,6 +371,16 @@ body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;
     <div class="alt-divider">or</div>
     <a class="alt-btn" id="oauth-github" href="#">Continue with GitHub</a>
     <a class="alt-btn" id="oauth-google" href="#">Continue with Google</a>
+    <div class="alt-divider">first time?</div>
+    <button class="alt-btn" id="setpw-toggle" type="button">Set your password (with an invite code)</button>
+    <div id="setpw-box" style="display:none;margin-top:14px">
+      <label for="sp-code">Invite / access code</label>
+      <input type="text" id="sp-code" placeholder="your access code" autocomplete="off" spellcheck="false">
+      <label for="sp-pw">New password <span style="font-weight:400;text-transform:none;color:var(--tx2)">(at least 10 characters)</span></label>
+      <input type="password" id="sp-pw" placeholder="choose a password" autocomplete="new-password" minlength="10">
+      <button class="btn" type="button" id="setpw-btn" style="margin-top:4px">Set password &amp; sign in</button>
+      <div class="auth-msg" id="setpw-msg"></div>
+    </div>
   </section>
 
   <!-- ═══ SERVICES (post-auth) ═══ -->
@@ -527,6 +537,33 @@ body{font-family:var(--f);background:var(--bg);color:var(--tx);min-height:100vh;
       showMsg('Passkey flow will complete once the lobby endpoint is live.','ok');
     }catch(_){showMsg('Passkey sign-in isn’t available yet.');}
     pk.disabled=false;pk.textContent='Use a passkey';
+  });}
+
+  // First-time: set your password with an invite code, then sign in (sets the SSO cookie).
+  var spT=document.getElementById('setpw-toggle'),spBox=document.getElementById('setpw-box'),spBtn=document.getElementById('setpw-btn'),spMsg=document.getElementById('setpw-msg');
+  function spShow(t,k){spMsg.textContent=t;spMsg.className='auth-msg '+(k||'err');}
+  if(spT){spT.addEventListener('click',function(){spBox.style.display=(spBox.style.display==='none'?'block':'none');});}
+  if(spBtn){spBtn.addEventListener('click',async function(){
+    spMsg.textContent='';spMsg.className='auth-msg';
+    var email=document.getElementById('inp-email').value.trim();
+    var code=document.getElementById('sp-code').value.trim();
+    var pw=document.getElementById('sp-pw').value;
+    if(!email||!code||!pw){spShow('Enter your email (in the field above), an access code, and a new password.');return;}
+    if(pw.length<10){spShow('Password must be at least 10 characters.');return;}
+    spBtn.disabled=true;spBtn.textContent='Setting…';
+    try{
+      var r=await fetch(LOBBY+'/set-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:email,email:email,password:pw,access_code:code})});
+      var b=null;try{b=await r.json();}catch(_){}
+      if(r.ok&&(!b||!b.error)){
+        spShow('Password set — signing you in…','ok');
+        var lr=await fetch(LOBBY+'/session/login',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:pw})});
+        if(lr.ok){var who=await checkSession();if(who){showAuthed();return;}}
+        spShow('Password set, but sign-in didn’t complete — use the Sign in button above.','ok');
+      }else{
+        spShow((b&&b.error)?('Couldn’t set password: '+b.error):'Couldn’t set password — check your access code.');
+      }
+    }catch(_){spShow('Could not reach the service. Please try again.');}
+    spBtn.disabled=false;spBtn.textContent='Set password & sign in';
   });}
 
   // Boot: decide authed vs login.
