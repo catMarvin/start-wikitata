@@ -4,8 +4,11 @@
   "installCommand": null,
   "buildCommand": null,
   "outputDirectory": ".",
+  "redirects": [
+    { "source": "/", "destination": "https://my.wikitata.com/setup", "permanent": false },
+    { "source": "/onboard", "destination": "https://my.wikitata.com/setup", "permanent": false }
+  ],
   "rewrites": [
-    { "source": "/services", "destination": "/services.html" },
-    { "source": "/onboard", "destination": "/onboard.html" }
+    { "source": "/services", "destination": "/services.html" }
   ]
 }
