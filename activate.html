@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Activate your wikiTaTa account</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: #0e0e14;
+    color: #e4e4e7;
+    font-family: "Inter Tight", system-ui, -apple-system, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+  .card {
+    background: rgba(20,20,26,0.94);
+    border: 1px solid rgba(167,139,250,0.28);
+    border-radius: 16px;
+    padding: 40px 36px;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.55), 0 0 80px rgba(139,92,246,0.1);
+  }
+  .logo {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: #f4f4f5;
+    margin-bottom: 28px;
+  }
+  .logo span { color: #8b5cf6; }
+  .spinner {
+    width: 44px; height: 44px;
+    border: 3px solid rgba(139,92,246,0.25);
+    border-top-color: #8b5cf6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 20px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  h1 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #f4f4f5;
+    margin-bottom: 10px;
+  }
+  p {
+    font-size: 15px;
+    color: #c4c4c8;
+    line-height: 1.55;
+    margin-bottom: 8px;
+  }
+  .icon { font-size: 48px; margin-bottom: 16px; }
+  .btn {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 12px 28px;
+    background: rgba(139,92,246,0.88);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .15s;
+  }
+  .btn:hover { background: #8b5cf6; }
+  .btn-ghost {
+    background: transparent;
+    color: #c0c0c8;
+    border: 1px solid rgba(167,139,250,0.3);
+    margin-left: 10px;
+  }
+  .btn-ghost:hover { color: #f4f4f5; border-color: rgba(167,139,250,0.7); background: rgba(139,92,246,0.1); }
+  .detail {
+    font-size: 13px;
+    color: #b8b8c4;
+    margin-top: 14px;
+  }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="logo">wiki<span>TaTa</span></div>
+  <div class="spinner" id="spinner"></div>
+  <h1 id="headline">Activating your account…</h1>
+  <p id="body-text">Verifying your activation link — this takes just a moment.</p>
+</div>
+
+<script>
+(function() {
+  var SB_URL = 'https://onoujmfhlrhvcqzjniei.supabase.co';
+
+  var params = new URLSearchParams(window.location.search);
+  var token  = params.get('token') || '';
+  var user   = params.get('u') || '';
+
+  function show(icon, headline, bodyHtml, actions) {
+    document.getElementById('spinner').remove();
+    document.querySelector('.card').insertAdjacentHTML('afterbegin',
+      '<div class="icon">' + icon + '</div>');
+    document.getElementById('headline').textContent = headline;
+    document.getElementById('body-text').innerHTML = bodyHtml;
+    if (actions) {
+      var d = document.createElement('div');
+      d.innerHTML = actions;
+      document.querySelector('.card').appendChild(d);
+    }
+  }
+
+  if (!token || !user) {
+    show('🔗', 'Invalid activation link',
+      'This link is missing required parameters. Please use the link from your welcome email.',
+      '<p class="detail">Need a new link? <a href="/request-token.html" style="color:#a78bfa">Request one here.</a></p>');
+    return;
+  }
+
+  fetch(SB_URL + '/functions/v1/activate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: token, username: user, mode: 'web' })
+  })
+  .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, status: r.status, data: d }; }); })
+  .then(function(res) {
+    if (res.data && res.data.ok) {
+      // Success — redirect to spine /onboard with session handle
+      var handle = res.data.session_handle || '';
+      var target = res.data.target_db || 'real';
+      var dest   = 'https://my.wikitata.com/onboard?sh=' + encodeURIComponent(handle)
+                 + '&u=' + encodeURIComponent(user)
+                 + '&db=' + encodeURIComponent(target);
+      show('✅', 'Account activated!',
+        'Your account is ready. Taking you to wikiTaTa now…',
+        '<a href="' + dest + '" class="btn">Open wikiTaTa</a>');
+      // Auto-redirect after 2.5s
+      setTimeout(function() { window.location.href = dest; }, 2500);
+    } else if (res.data && res.data.action === 'challenge') {
+      show('🔐', 'Security check',
+        'We detected you\'re connecting from a different location than when you first clicked this link. '
+        + 'Check your email for a one-time verification code and enter it at my.wikitata.com.',
+        '<a href="https://my.wikitata.com/login" class="btn">Go to login</a>'
+        + '<a href="/request-token.html" class="btn btn-ghost">Request new link</a>');
+    } else if (res.status === 400 || res.status === 409) {
+      var msg = (res.data && res.data.error) || 'This link has already been used or has expired.';
+      show('⏱️', 'Link no longer valid',
+        msg,
+        '<a href="/request-token.html" class="btn">Request a new link</a>');
+    } else {
+      show('⚠️', 'Something went wrong',
+        'We couldn\'t activate your account right now. Please try again in a moment.',
+        '<a href="/request-token.html" class="btn">Request a new link</a>');
+    }
+  })
+  .catch(function(e) {
+    show('⚠️', 'Connection error',
+      'Could not reach wikiTaTa. Check your internet connection and try again.',
+      '<a href="' + window.location.href + '" class="btn">Retry</a>');
+  });
+})();
+</script>
+</body>
+</html>
