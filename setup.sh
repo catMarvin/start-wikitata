@@ -399,13 +399,17 @@ blank
 # Claude config
 mkdir -p "$HOME_DIR/.claude"
 MCP_PATH="$HOME_DIR/git/wikitata/wt-mcp-server/index.js"
+# wtu-5: new tenants run against the WT_USER content DB (lobby-issued ES256 sessions).
+# Identity/auth flows through the lobby IdP (auth.wikitata.com); content REST hits WT_USER.
+WT_SB_URL_TENANT="https://qfvnynyjeydxchtrwznk.supabase.co"
+WT_SB_KEY_TENANT="sb_publishable_xizlPDZaiw3dusGhPqul3A_28vmrpfu"
 
 if has claude; then
   dim "Registering wikiTaTa MCP server with Claude Code..."
   claude mcp add --scope user wikitata node "$MCP_PATH" \
     -e WT_USER="$WT_USERNAME" \
-    -e WT_SB_URL="https://onoujmfhlrhvcqzjniei.supabase.co" \
-    -e WT_SB_KEY="sb_publishable_QMzEps5hwDAVp0RI2uFlkQ_VyPGa2MK" 2>/dev/null \
+    -e WT_SB_URL="$WT_SB_URL_TENANT" \
+    -e WT_SB_KEY="$WT_SB_KEY_TENANT" 2>/dev/null \
     && ok "wikiTaTa MCP registered (user scope)" \
     || warn "MCP registration failed — run 'claude mcp add' manually after setup"
 else
@@ -418,8 +422,8 @@ else
       "args": ["$MCP_PATH"],
       "env": {
         "WT_USER": "$WT_USERNAME",
-        "WT_SB_URL": "https://onoujmfhlrhvcqzjniei.supabase.co",
-        "WT_SB_KEY": "sb_publishable_QMzEps5hwDAVp0RI2uFlkQ_VyPGa2MK"
+        "WT_SB_URL": "$WT_SB_URL_TENANT",
+        "WT_SB_KEY": "$WT_SB_KEY_TENANT"
       }
     }
   }
@@ -551,6 +555,60 @@ ENVEOF
   ok "WT environment variables"
 else
   ok "WT environment variables already set"
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SELF-HEAL HANDSHAKE (card ce413352) — local install; registration finishes in
+# the first Claude session (setup.sh has no JWT; Claude has the MCP tools).
+# Token plaintext lives ONLY in the login keychain; only its sha256 is pending.
+# ═══════════════════════════════════════════════════════════════════════════════
+step_header "Self-Heal Setup" "Remote diagnostics + allowlisted self-repair for this machine"
+
+SH_DIR="$HOME_DIR/git/wikitata/tools/self-heal"
+SH_CFG_DIR="$HOME_DIR/Library/Application Support/wikitata"
+SH_PLIST="$HOME_DIR/Library/LaunchAgents/com.wikitata.selfheal.plist"
+
+if [ ! -f "$SH_DIR/poller.js" ]; then
+  warn "tools/self-heal not in repo checkout — self-heal skipped (git pull later + re-run)"
+else
+  # 1) Device token in login keychain (generate once).
+  if ! /usr/bin/security find-generic-password -a "$USER" -s wt-selfheal-token >/dev/null 2>&1; then
+    /usr/bin/security add-generic-password -a "$USER" -s wt-selfheal-token -w "$(openssl rand -hex 32)" -U       && ok "Self-heal device token created (login keychain)"       || warn "Keychain write failed — self-heal token pending"
+  else
+    ok "Self-heal device token already in keychain"
+  fi
+  SH_HASH=""
+  SH_TOKEN_TMP="$(/usr/bin/security find-generic-password -a "$USER" -s wt-selfheal-token -w 2>/dev/null || true)"
+  if [ -n "$SH_TOKEN_TMP" ]; then
+    SH_HASH=$(printf '%s' "$SH_TOKEN_TMP" | shasum -a 256 | cut -d' ' -f1)
+    unset SH_TOKEN_TMP
+  fi
+
+  # 2) Config (device_id intentionally blank — first Claude session fills it
+  #    when it registers the device + token hash via MCP).
+  mkdir -p "$SH_CFG_DIR"
+  printf '{\n  "device_id": "%s",\n  "supabase_url": "%s",\n  "anon_key": "%s",\n  "poll_seconds": 30,\n  "burst_seconds": 5,\n  "units": {},\n  "repos": ["%s"],\n  "expected_keychain_keys": ["wt-selfheal-token"]\n}\n' \
+    "PENDING_CLAUDE_REGISTRATION" "$WT_SB_URL_TENANT" "$WT_SB_KEY_TENANT" "$HOME_DIR/git/wikitata" > "$SH_CFG_DIR/selfheal.json"
+  ok "Self-heal config staged ($SH_CFG_DIR/selfheal.json)"
+
+  # 3) Stage the pending hash for the first Claude session to register.
+  if [ -n "$SH_HASH" ]; then
+    printf '%s\n' "$SH_HASH" > "$SH_CFG_DIR/selfheal-token-hash.pending"
+    ok "Token hash staged for Claude registration"
+  fi
+
+  # 4) LaunchAgent installed but NOT started — poller starts after Claude
+  #    registers the device (it would only log auth failures before that).
+  NODE_BIN="$(command -v node || true)"
+  if [ -n "$NODE_BIN" ] && [ -f "$SH_DIR/com.wikitata.selfheal.plist" ]; then
+    mkdir -p "$HOME_DIR/Library/LaunchAgents" "$HOME_DIR/Library/Logs"
+    sed -e "s|__NODE__|$NODE_BIN|g" -e "s|__DIR__|$SH_DIR|g" -e "s|__HOME__|$HOME_DIR|g" \
+      "$SH_DIR/com.wikitata.selfheal.plist" > "$SH_PLIST"
+    plutil -lint "$SH_PLIST" >/dev/null 2>&1 \
+      && ok "Self-heal LaunchAgent staged (starts after Claude registers this device)" \
+      || warn "LaunchAgent plist failed lint — self-heal poller not staged"
+  fi
+  dim "First Claude session completes this: device registration + token-hash + poller start."
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
