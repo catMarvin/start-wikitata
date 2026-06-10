@@ -26,7 +26,7 @@ SKIPPED=0
 
 # ── Open the landing page if no username provided (gate first) ───────────────
 if [ -z "${WT_USERNAME:-}" ] && [ -z "${1:-}" ]; then
-  open "https://catmarvin.github.io/start-wikitata/" 2>/dev/null
+  open "https://my.wikitata.com/setup" 2>/dev/null
   echo ""
   echo -e "  ${BD}Opening the wikiTaTa setup page in your browser...${RST}"
   echo -e "  ${D}Enter your username and invite code there first.${RST}"
@@ -34,6 +34,39 @@ if [ -z "${WT_USERNAME:-}" ] && [ -z "${1:-}" ]; then
   echo ""
   exit 0
 fi
+
+# ── Opening brief ────────────────────────────────────────────────────────────
+
+clear
+printf '\n\n'
+echo -e "  ${BAR}"
+echo -e "  ${BD}wikiTaTa Developer Setup${RST}                          ${D}step 0 of $TOTAL${RST}"
+echo -e "  ${BAR}"
+printf '\n'
+echo -e "  ${BD}What this script does — and why every step is needed:${RST}"
+printf '\n'
+echo -e "  ${C}→${RST}  ${BD}Installs the tools Claude Code depends on${RST}"
+echo -e "  ${D}     Node.js, Homebrew, and Xcode CLT are the runtime foundation.${RST}"
+echo -e "  ${D}     Claude Code and the wikiTaTa MCP server both run on Node.js.${RST}"
+printf '\n'
+echo -e "  ${C}→${RST}  ${BD}Connects your machine to GitHub and clones the repo${RST}"
+echo -e "  ${D}     The MCP server that links Claude to your workspace lives in${RST}"
+echo -e "  ${D}     the private wikiTaTa repo. SSH gives your machine trusted access.${RST}"
+printf '\n'
+echo -e "  ${C}→${RST}  ${BD}Registers your workspace with Claude Code${RST}"
+echo -e "  ${D}     Claude needs to know where the MCP server is and who you are.${RST}"
+echo -e "  ${D}     Without this, Claude is a generic AI — not your AI.${RST}"
+printf '\n'
+echo -e "  ${C}→${RST}  ${BD}Installs shell shortcuts and sets up self-monitoring${RST}"
+echo -e "  ${D}     wt_start / wt_end / wt_autolink speed up your daily workflow.${RST}"
+echo -e "  ${D}     Self-heal lets us diagnose and fix issues remotely.${RST}"
+printf '\n'
+echo -e "  ${D}Every step checks if something is already installed before touching it.${RST}"
+echo -e "  ${D}Safe to re-run. Fresh machine takes about 5 minutes.${RST}"
+printf '\n'
+echo -e "  ${BAR}"
+printf '\n'
+read -p "  Ready to begin? Press Enter... " _unused
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -70,6 +103,9 @@ has() { command -v "$1" >/dev/null 2>&1; }
 # ═══════════════════════════════════════════════════════════════════════════════
 
 step_header "Xcode Command Line Tools" "Git and build essentials for macOS"
+dim "Why: Git is bundled here — needed to clone the wikiTaTa repo and pull updates."
+dim "     Also provides the C compiler some npm packages need to build native modules."
+blank
 
 if xcode-select -p >/dev/null 2>&1; then
   ok "Xcode is already installed. Great!"
@@ -102,6 +138,9 @@ fi
 # ═══════════════════════════════════════════════════════════════════════════════
 
 step_header "Homebrew" "macOS package manager — makes installing everything else clean"
+dim "Why: The safest way to install Node.js and CLI tools on a Mac. Keeps things"
+dim "     updatable and out of system directories. Most developers already have it."
+blank
 
 if has brew; then
   ok "Homebrew is already installed. Nice!"
@@ -134,6 +173,9 @@ fi
 # ═══════════════════════════════════════════════════════════════════════════════
 
 step_header "Node.js" "Required for Claude Code, the setup wizard, and all CLI tools"
+dim "Why: Claude Code runs on Node.js. The wikiTaTa MCP server — the bridge between"
+dim "     Claude and your workspace — also runs on Node.js. Both need it at runtime."
+blank
 
 if has node; then
   NODE_V=$(node -v)
@@ -169,6 +211,9 @@ fi
 # ═══════════════════════════════════════════════════════════════════════════════
 
 step_header "CLI Tools" "Claude Code, Supabase CLI, Vercel CLI"
+dim "Why: Claude Code is the AI assistant you'll use every day. Supabase and Vercel"
+dim "     CLIs let you manage your database and deploy your work from the terminal."
+blank
 
 if ! has npm; then
   fail "npm not found — Node.js is required for this step"
@@ -215,6 +260,9 @@ wait_for_enter
 # ═══════════════════════════════════════════════════════════════════════════════
 
 step_header "Your Identity" "wikiTaTa username — assigned to you when you were invited"
+dim "Why: Your username is how wikiTaTa recognizes you across every machine and"
+dim "     session. It's embedded in your Claude config so Claude knows who you are."
+blank
 
 if [ -n "${WT_USERNAME:-}" ]; then
   ok "Username from environment: $WT_USERNAME"
@@ -237,6 +285,9 @@ wait_for_enter
 # ═══════════════════════════════════════════════════════════════════════════════
 
 step_header "SSH Key for GitHub" "Required to clone the private wikiTaTa repo"
+dim "Why: The wikiTaTa repo is private. SSH lets your machine prove its identity to"
+dim "     GitHub without a password on every pull or clone. One-time setup."
+blank
 
 SSH_KEY=""
 if [ -d "$HOME/.ssh" ]; then
@@ -353,6 +404,10 @@ fi
 # ═══════════════════════════════════════════════════════════════════════════════
 
 step_header "wikiTaTa Repo + Claude Config" "Clone the private repo and configure Claude Code"
+dim "Why: The MCP server that connects Claude to your workspace lives in this repo."
+dim "     Claude Config tells Claude where to find it and registers your credentials."
+dim "     Without this, Claude has no connection to your wikiTaTa workspace."
+blank
 
 HOME_DIR="$HOME"
 mkdir -p "$HOME_DIR/git"
@@ -493,6 +548,10 @@ wait_for_enter
 # ═══════════════════════════════════════════════════════════════════════════════
 
 step_header "Shell Tools" "wt_autolink, wt_start, wt_end + environment variables"
+dim "Why: wt_start / wt_end / wt_autolink are the shortcuts you'll use every session."
+dim "     Environment variables (WT_ACTOR, WT_SB_URL) let scripts know who you are"
+dim "     without you having to type credentials each time."
+blank
 
 ZSHRC="$HOME_DIR/.zshrc"
 [ -f "$ZSHRC" ] || touch "$ZSHRC"
@@ -563,6 +622,10 @@ fi
 # Token plaintext lives ONLY in the login keychain; only its sha256 is pending.
 # ═══════════════════════════════════════════════════════════════════════════════
 step_header "Self-Heal Setup" "Remote diagnostics + allowlisted self-repair for this machine"
+dim "Why: When something breaks (MCP loses connection, a token expires, a service"
+dim "     restarts), self-heal detects it and fixes it — no manual script required."
+dim "     A device token in your keychain proves this machine is yours."
+blank
 
 SH_DIR="$HOME_DIR/git/wikitata/tools/self-heal"
 SH_CFG_DIR="$HOME_DIR/Library/Application Support/wikitata"
@@ -653,7 +716,7 @@ echo -e "  ${BAR}"
 printf '\n'
 
 # Open browser to completion page
-open "https://catmarvin.github.io/start-wikitata/?done=1&user=$WT_USERNAME" 2>/dev/null
+open "https://my.wikitata.com/setup?done=1&user=$WT_USERNAME" 2>/dev/null
 
 blank
 read -p "  Ready to launch Claude Code? (y/n) " LAUNCH
