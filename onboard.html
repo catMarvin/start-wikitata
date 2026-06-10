@@ -386,8 +386,8 @@ const token = new URLSearchParams(location.search).get('token') || '';
 const CMD_BASE_NIX  = 'bash <(curl -fsSL https://start.wikitata.com/onboard-linux.sh)';
 const CMD_BASE_WIN  = 'irm "https://start.wikitata.com/onboard-windows.ps1" | iex';
 
-const CMD_NIX  = token ? `WT_TOKEN="${token}" ${CMD_BASE_NIX}`  : CMD_BASE_NIX;
-const CMD_WIN  = token ? `$env:WT_TOKEN="${token}"; ${CMD_BASE_WIN}` : CMD_BASE_WIN;
+const CMD_NIX  = token ? `WT_ACTIVATION_TOKEN="${token}" ${CMD_BASE_NIX}`  : CMD_BASE_NIX;
+const CMD_WIN  = token ? `$env:WT_ACTIVATION_TOKEN="${token}"; ${CMD_BASE_WIN}` : CMD_BASE_WIN;
 
 // Inject commands into DOM
 document.getElementById('cmd-mac-text').textContent    = CMD_NIX;
