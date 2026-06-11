@@ -25,8 +25,9 @@ $script:Errors = 0
 
 # ── Helpers (parity with onboard-linux.sh) ───────────────────────────────────
 function Banner([string]$t, [string]$d) { Write-Host "`n===== $t =====" -ForegroundColor Cyan; if ($d) { Write-Host "  $d" -ForegroundColor DarkGray } }
-function Ok([string]$m)   { Write-Host "  OK: $m" -ForegroundColor Green }
-function Warn2([string]$m){ Write-Host "  WARN: $m" -ForegroundColor Yellow; $script:Errors++ }
+function Ok([string]$m)    { Write-Host "  OK: $m" -ForegroundColor Green }
+function Warn2([string]$m) { Write-Host "  WARN: $m" -ForegroundColor Yellow; $script:Errors++ }
+function Why([string]$m)   { Write-Host "  Why: $m" -ForegroundColor DarkGray }
 function LogLocal([string]$stage, [string]$status, [string]$detail = '') {
   New-Item -ItemType Directory -Force -Path $CfgDir | Out-Null
   $row = @{ ts = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'); stage = $stage; status = $status; detail = $detail; platform = 'windows'; user = $WT_USERNAME } | ConvertTo-Json -Compress
@@ -62,8 +63,39 @@ function ProtectToFile([string]$plain, [string]$file, [System.Security.Cryptogra
   [IO.File]::WriteAllBytes($file, $bytes)
 }
 
+# ── Opening brief ─────────────────────────────────────────────────────────────
+Write-Host ""
+Write-Host "  ================================================================" -ForegroundColor DarkGray
+Write-Host "  wikiTaTa Developer Setup — What this installs and why" -ForegroundColor White
+Write-Host "  ================================================================" -ForegroundColor DarkGray
+Write-Host ""
+Write-Host "  → Installs the tools Claude Code depends on" -ForegroundColor Cyan
+Write-Host "    Node.js and git are the runtime foundation. Claude Code and the" -ForegroundColor DarkGray
+Write-Host "    wikiTaTa MCP server both run on Node.js." -ForegroundColor DarkGray
+Write-Host ""
+Write-Host "  → Clones the wikiTaTa repo and starts the MCP server" -ForegroundColor Cyan
+Write-Host "    The MCP server bridges Claude to your workspace. Without it," -ForegroundColor DarkGray
+Write-Host "    Claude is a generic AI — not your AI." -ForegroundColor DarkGray
+Write-Host ""
+Write-Host "  → Stores your credentials securely (DPAPI, never plaintext)" -ForegroundColor Cyan
+Write-Host "    Your JWT is encrypted to your Windows account — only this machine" -ForegroundColor DarkGray
+Write-Host "    can read it. No passwords exposed in environment variables." -ForegroundColor DarkGray
+Write-Host ""
+Write-Host "  → Registers this device and sets up self-monitoring" -ForegroundColor Cyan
+Write-Host "    Self-heal detects connection problems and fixes them automatically." -ForegroundColor DarkGray
+Write-Host "    Device registration links this machine to your workspace." -ForegroundColor DarkGray
+Write-Host ""
+Write-Host "  Every stage checks before installing. Safe to re-run." -ForegroundColor DarkGray
+Write-Host "  Fresh machine: about 5 minutes." -ForegroundColor DarkGray
+Write-Host ""
+Write-Host "  ================================================================" -ForegroundColor DarkGray
+Write-Host ""
+Read-Host "  Ready to begin? Press Enter"
+
 # ── STAGE 0 — Identity & prerequisites ────────────────────────────────────────
 Banner 'STAGE 0 — Identity & Prerequisites' 'Verifying credentials and environment'
+Why 'Your username and JWT come pre-filled from my.wikitata.com/setup. They tell'
+Why 'each stage who you are and authorize the database calls that follow.'
 if (-not $WT_USERNAME) { throw 'WT_USERNAME env var is required (set it per the start.wikitata.com instructions)' }
 if (-not $WT_JWT)      { Warn2 'WT_JWT missing — DB logging, device registration and self-heal will be skipped' }
 if (-not $WT_SB_ANON_KEY) { Warn2 'WT_SB_ANON_KEY missing — REST calls disabled' }
@@ -78,6 +110,8 @@ LogLocal 'stage0' 'ok' "user:$WT_USERNAME jwt_len:$($WT_JWT.Length)"
 
 # ── STAGE 1 — Platform detect ─────────────────────────────────────────────────
 Banner 'STAGE 1 — Platform' 'Windows version + package manager'
+Why 'Confirms your Windows version and whether winget is available. winget is the'
+Why 'preferred installer — if missing, some steps fall back to manual prompts.'
 $os = Get-CimInstance Win32_OperatingSystem
 Ok "$($os.Caption) (build $($os.BuildNumber)) · PowerShell $($PSVersionTable.PSVersion)"
 $HasWinget = [bool](Get-Command winget -ErrorAction SilentlyContinue)
@@ -87,6 +121,8 @@ WtSvcUpsert 'onboard:platform' $null $env:COMPUTERNAME 'active' "windows build $
 
 # ── STAGE 2 — Dependencies (git) ─────────────────────────────────────────────
 Banner 'STAGE 2 — Dependencies' 'git'
+Why 'git is needed to clone the wikiTaTa repo and pull future updates.'
+Why 'Already installed? This stage skips in under a second.'
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
   if ($HasWinget) {
     Invoke-Retry 3 2 { winget install --id Git.Git -e --accept-source-agreements --accept-package-agreements --silent | Out-Null }
@@ -98,6 +134,8 @@ LogLocal 'stage2' 'ok' 'git'
 
 # ── STAGE 3 — Node.js ────────────────────────────────────────────────────────
 Banner 'STAGE 3 — Node.js' 'LTS runtime for Claude Code + MCP server + poller'
+Why 'Claude Code runs on Node.js. The wikiTaTa MCP server — the bridge between'
+Why 'Claude and your workspace — also runs on Node.js. Both need it at runtime.'
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
   if ($HasWinget) {
     Invoke-Retry 3 2 { winget install --id OpenJS.NodeJS.LTS -e --accept-source-agreements --accept-package-agreements --silent | Out-Null }
@@ -109,6 +147,8 @@ LogLocal 'stage3' 'ok' (node --version)
 
 # ── STAGE 4 — Claude Code CLI ────────────────────────────────────────────────
 Banner 'STAGE 4 — Claude Code' 'npm install -g @anthropic-ai/claude-code'
+Why 'Claude Code is the AI assistant you will use every day. This is the CLI that'
+Why 'loads your MCP servers, manages your config, and runs your sessions.'
 if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
   Invoke-Retry 3 3 { npm install -g @anthropic-ai/claude-code | Out-Null }
   $env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')
@@ -118,6 +158,8 @@ LogLocal 'stage4' 'ok' 'claude-code'
 
 # ── STAGE 5 — wikiTaTa MCP server ────────────────────────────────────────────
 Banner 'STAGE 5 — wikiTaTa repo + MCP server' 'clone + npm install'
+Why 'The MCP server lives in the wikiTaTa repo. It is the bridge that gives Claude'
+Why 'access to your cards, sessions, vault, and workspace tools. Required.'
 if (-not (Test-Path $McpDir)) {
   New-Item -ItemType Directory -Force -Path (Split-Path $RepoDir) | Out-Null
   Invoke-Retry 3 3 { git clone https://github.com/catMarvin/wikitata.git $RepoDir | Out-Null }
@@ -131,6 +173,8 @@ WtSvcUpsert 'local:mcp' $null (Join-Path $McpDir 'index.js') 'active' 'stdio-mcp
 
 # ── STAGE 6 — Credential storage (DPAPI, never plaintext) ────────────────────
 Banner 'STAGE 6 — Credential storage' 'WT_JWT → DPAPI-protected file (CurrentUser scope)'
+Why 'Your JWT is encrypted using Windows DPAPI — only your Windows account can'
+Why 'decrypt it. Never written to env vars, never logged, never exposed in ps output.'
 if ($WT_JWT) {
   New-Item -ItemType Directory -Force -Path $CfgDir | Out-Null
   ProtectToFile $WT_JWT (Join-Path $CfgDir 'wt-jwt.dpapi') ([System.Security.Cryptography.DataProtectionScope]::CurrentUser)
@@ -140,6 +184,8 @@ if ($WT_JWT) {
 
 # ── STAGE 7 — Claude MCP registration ────────────────────────────────────────
 Banner 'STAGE 7 — Claude MCP registration' 'claude mcp add (user scope)'
+Why 'Tells Claude Code where the wikiTaTa MCP server lives and registers your'
+Why 'credentials. Without this step Claude has no connection to your workspace.'
 $mcpIndex = Join-Path $McpDir 'index.js'
 try {
   claude mcp add --scope user wikitata node $mcpIndex -e "WT_USER=$WT_USERNAME" -e "WT_SB_URL=$WT_SB_URL" -e "WT_SB_KEY=$WT_SB_ANON_KEY" 2>$null | Out-Null
@@ -149,6 +195,8 @@ try {
 
 # ── STAGE 8 — Device registration ────────────────────────────────────────────
 Banner 'STAGE 8 — Device registration' 'this machine → Settings → Devices'
+Why 'Registers this machine in your wikiTaTa workspace. Lets you see and manage'
+Why 'all your connected devices from Settings → Devices.'
 $DeviceId = ''
 if ($WT_JWT) {
   try {
@@ -161,6 +209,8 @@ if ($WT_JWT) {
 
 # ── STAGE 9 — Self-heal handshake (card ce413352) ────────────────────────────
 Banner 'STAGE 9 — Self-heal handshake' 'token (DPAPI) + config + Scheduled Task poller + first boot-audit'
+Why 'When something breaks — MCP loses connection, a token expires, a service'
+Why 'restarts — self-heal detects it and fixes it. No manual script required.'
 $SelfHealOk = $true
 if (-not $DeviceId -or -not (Test-Path (Join-Path $SelfHealDir 'poller.js'))) {
   Warn2 'Self-heal skipped (no device id, or tools/self-heal missing)'
@@ -211,6 +261,8 @@ if ($SelfHealOk) {
 
 # ── STAGE 10 — Live validation + MCP verify ──────────────────────────────────
 Banner 'STAGE 10 — Live validation' 'node, claude, MCP syntax, MCP registration'
+Why 'Runs the full stack end-to-end: Node runtime, Claude CLI, MCP server syntax,'
+Why 'and MCP registration. Catches problems before you open Claude for the first time.'
 $v = 0
 if ((node -e "console.log('ok')") -eq 'ok') { Ok 'Node runtime: ok' } else { Warn2 'Node runtime check failed'; $v++ }
 if (Get-Command claude -ErrorAction SilentlyContinue) { Ok 'Claude CLI: ok' } else { Warn2 'Claude CLI missing'; $v++ }
