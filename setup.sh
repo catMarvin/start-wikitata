@@ -617,9 +617,12 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SELF-HEAL HANDSHAKE (card ce413352) — local install; registration finishes in
-# the first Claude session (setup.sh has no JWT; Claude has the MCP tools).
-# Token plaintext lives ONLY in the login keychain; only its sha256 is pending.
+# SELF-HEAL + DEVICE ACTIVATION (cards ce413352 / 751f1c4d) — when the /i/<code>
+# shim provided a lobby JWT (WT_JWT), ONE activate-edge-fn exchange registers the
+# device + selfheal hash server-side AND delivers the CACP coordination token into
+# the login keychain (S549: the anon bootstrap RPC is revoked; this is the only path).
+# Without a JWT everything stages locally and the first Claude session finishes it.
+# Token plaintext lives ONLY in the login keychain; only its sha256 crosses the wire.
 # ═══════════════════════════════════════════════════════════════════════════════
 step_header "Self-Heal Setup" "Remote diagnostics + allowlisted self-repair for this machine"
 dim "Why: When something breaks (MCP loses connection, a token expires, a service"
@@ -647,31 +650,96 @@ else
     unset SH_TOKEN_TMP
   fi
 
-  # 2) Config (device_id intentionally blank — first Claude session fills it
-  #    when it registers the device + token hash via MCP).
-  mkdir -p "$SH_CFG_DIR"
-  printf '{\n  "device_id": "%s",\n  "supabase_url": "%s",\n  "anon_key": "%s",\n  "poll_seconds": 30,\n  "burst_seconds": 5,\n  "units": {},\n  "repos": ["%s"],\n  "expected_keychain_keys": ["wt-selfheal-token"]\n}\n' \
-    "PENDING_CLAUDE_REGISTRATION" "$WT_SB_URL_TENANT" "$WT_SB_KEY_TENANT" "$HOME_DIR/git/wikitata" > "$SH_CFG_DIR/selfheal.json"
-  ok "Self-heal config staged ($SH_CFG_DIR/selfheal.json)"
-
-  # 3) Stage the pending hash for the first Claude session to register.
-  if [ -n "$SH_HASH" ]; then
-    printf '%s\n' "$SH_HASH" > "$SH_CFG_DIR/selfheal-token-hash.pending"
-    ok "Token hash staged for Claude registration"
+  # 2) Activate with wikiTaTa (S549). The JWT travels in the request BODY over
+  #    stdin (never argv — ps must not see it). Response carries device_id +
+  #    registration flags + the CACP token (straight to keychain, never echoed).
+  WT_DEVICE_ID=""
+  DEV_REGISTERED="false"
+  SH_REGISTERED="false"
+  if [ -n "${WT_JWT:-}" ]; then
+    ACT_PAYLOAD=$(WT_JWT="$WT_JWT" WT_USERNAME="$WT_USERNAME" SH_HASH="$SH_HASH" python3 -c '
+import json, os, socket
+print(json.dumps({
+  "mode": "setup",
+  "jwt": os.environ.get("WT_JWT", ""),
+  "username": os.environ.get("WT_USERNAME", ""),
+  "selfheal_token_hash": os.environ.get("SH_HASH", ""),
+  "hostname": socket.gethostname(),
+  "platform": "darwin",
+  "device_label": socket.gethostname().split(".")[0],
+}))' 2>/dev/null)
+    ACT_RESP=$(printf '%s' "$ACT_PAYLOAD" | curl -sf --max-time 25 \
+      -X POST "https://onoujmfhlrhvcqzjniei.supabase.co/functions/v1/activate" \
+      -H "Content-Type: application/json" --data-binary @- 2>/dev/null || true)
+    unset ACT_PAYLOAD
+    if [ -n "$ACT_RESP" ]; then
+      WT_DEVICE_ID=$(printf '%s' "$ACT_RESP" | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d.get("device_id") or "")' 2>/dev/null || echo "")
+      DEV_REGISTERED=$(printf '%s' "$ACT_RESP" | python3 -c 'import sys,json;d=json.load(sys.stdin);print("true" if d.get("device_registered") else "false")' 2>/dev/null || echo "false")
+      SH_REGISTERED=$(printf '%s' "$ACT_RESP" | python3 -c 'import sys,json;d=json.load(sys.stdin);print("true" if d.get("selfheal_registered") else "false")' 2>/dev/null || echo "false")
+      CACP_TMP=$(printf '%s' "$ACT_RESP" | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d.get("cacp_token") or "")' 2>/dev/null || echo "")
+      if [ -n "$CACP_TMP" ]; then
+        /usr/bin/security add-generic-password -U -a "$USER" -s wikitata-cacp -w "$CACP_TMP" 2>/dev/null \
+          && ok "CACP coordination token stored (login keychain: wikitata-cacp)" \
+          || warn "CACP keychain write failed — first Claude session can re-fetch"
+        unset CACP_TMP
+      else
+        warn "CACP token not delivered — first Claude session can re-fetch"
+      fi
+      if [ "$DEV_REGISTERED" = "true" ]; then
+        ok "Device registered with wikiTaTa ($WT_DEVICE_ID)"
+      else
+        warn "Device registration deferred — first Claude session completes it"
+      fi
+      [ "$SH_REGISTERED" = "true" ] && ok "Self-heal token hash registered server-side"
+    else
+      warn "Activation exchange unreachable — staging locally; first Claude session completes it"
+    fi
+  else
+    dim "No session JWT in environment (direct run) — staging locally for first Claude session."
   fi
 
-  # 4) LaunchAgent installed but NOT started — poller starts after Claude
-  #    registers the device (it would only log auth failures before that).
+  # 3) Config (device_id from the exchange when registered; otherwise the first
+  #    Claude session fills it when it registers the device + token hash via MCP).
+  SH_DEVICE_ID_OUT="PENDING_CLAUDE_REGISTRATION"
+  [ "$DEV_REGISTERED" = "true" ] && [ -n "$WT_DEVICE_ID" ] && SH_DEVICE_ID_OUT="$WT_DEVICE_ID"
+  mkdir -p "$SH_CFG_DIR"
+  printf '{\n  "device_id": "%s",\n  "supabase_url": "%s",\n  "anon_key": "%s",\n  "poll_seconds": 30,\n  "burst_seconds": 5,\n  "units": {},\n  "repos": ["%s"],\n  "expected_keychain_keys": ["wt-selfheal-token"]\n}\n' \
+    "$SH_DEVICE_ID_OUT" "$WT_SB_URL_TENANT" "$WT_SB_KEY_TENANT" "$HOME_DIR/git/wikitata" > "$SH_CFG_DIR/selfheal.json"
+  ok "Self-heal config staged ($SH_CFG_DIR/selfheal.json)"
+
+  # 4) Stage the pending hash ONLY if the exchange didn't register it already.
+  if [ -n "$SH_HASH" ] && [ "$SH_REGISTERED" != "true" ]; then
+    printf '%s\n' "$SH_HASH" > "$SH_CFG_DIR/selfheal-token-hash.pending"
+    ok "Token hash staged for Claude registration"
+  elif [ "$SH_REGISTERED" = "true" ]; then
+    rm -f "$SH_CFG_DIR/selfheal-token-hash.pending" 2>/dev/null
+  fi
+
+  # 5) LaunchAgent. Fully registered (device + hash) → start the poller now;
+  #    otherwise stage only (it would just log auth failures before registration).
   NODE_BIN="$(command -v node || true)"
   if [ -n "$NODE_BIN" ] && [ -f "$SH_DIR/com.wikitata.selfheal.plist" ]; then
     mkdir -p "$HOME_DIR/Library/LaunchAgents" "$HOME_DIR/Library/Logs"
     sed -e "s|__NODE__|$NODE_BIN|g" -e "s|__DIR__|$SH_DIR|g" -e "s|__HOME__|$HOME_DIR|g" \
       "$SH_DIR/com.wikitata.selfheal.plist" > "$SH_PLIST"
-    plutil -lint "$SH_PLIST" >/dev/null 2>&1 \
-      && ok "Self-heal LaunchAgent staged (starts after Claude registers this device)" \
-      || warn "LaunchAgent plist failed lint — self-heal poller not staged"
+    if plutil -lint "$SH_PLIST" >/dev/null 2>&1; then
+      if [ "$DEV_REGISTERED" = "true" ] && [ "$SH_REGISTERED" = "true" ]; then
+        launchctl bootout "gui/$(id -u)/com.wikitata.selfheal" 2>/dev/null || true
+        launchctl bootstrap "gui/$(id -u)" "$SH_PLIST" 2>/dev/null \
+          && ok "Self-heal poller started (device registered this install)" \
+          || warn "LaunchAgent staged but failed to start — first Claude session can start it"
+      else
+        ok "Self-heal LaunchAgent staged (starts after Claude registers this device)"
+      fi
+    else
+      warn "LaunchAgent plist failed lint — self-heal poller not staged"
+    fi
   fi
-  dim "First Claude session completes this: device registration + token-hash + poller start."
+  if [ "$DEV_REGISTERED" = "true" ] && [ "$SH_REGISTERED" = "true" ]; then
+    dim "Device, self-heal and CACP registration completed during install."
+  else
+    dim "First Claude session completes this: device registration + token-hash + poller start."
+  fi
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════

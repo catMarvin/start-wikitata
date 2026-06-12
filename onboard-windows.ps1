@@ -207,6 +207,34 @@ if ($WT_JWT) {
   } catch { Warn2 "Device registration failed: $($_.Exception.Message)"; LogLocal 'stage8' 'device_fail' $_.Exception.Message }
 }
 
+# ── STAGE 8b — wikiTaTa activation exchange (S549) ──────────────────────────
+# The CACP coordination token is delivered ONLY via the activate edge fn (the
+# anon bootstrap RPC is revoked). The same exchange registers the device
+# server-side over a direct DB connection — covering the case where Stage 8's
+# client-side RPC was rejected (lobby JWTs carry no wt_user claim).
+Banner 'STAGE 8b — wikiTaTa activation' 'CACP coordination token + server-side device registration'
+Why 'The CACP token lets Claude sessions on this machine coordinate through the'
+Why 'Now Board. It is delivered only by this one authenticated exchange.'
+if ($WT_JWT) {
+  try {
+    $actBody = @{ mode = 'setup'; jwt = $WT_JWT; username = $WT_USERNAME; hostname = $env:COMPUTERNAME; platform = 'windows'; device_label = "Windows — $env:COMPUTERNAME" } | ConvertTo-Json
+    $act = Invoke-RestMethod -Method Post -Uri 'https://onoujmfhlrhvcqzjniei.supabase.co/functions/v1/activate' -TimeoutSec 25 -ContentType 'application/json' -Body $actBody
+    if ($act.ok -and $act.cacp_token) {
+      ProtectToFile "$($act.cacp_token)" (Join-Path $CfgDir 'wt-cacp.dpapi') ([System.Security.Cryptography.DataProtectionScope]::CurrentUser)
+      Ok "CACP token stored DPAPI-protected ($CfgDir\wt-cacp.dpapi)"
+      LogLocal 'stage8b' 'cacp_stored' 'dpapi-currentuser'
+    } else {
+      Warn2 'CACP token not delivered — first Claude session can re-fetch'
+      LogLocal 'stage8b' 'cacp_missing' ''
+    }
+    if (-not $DeviceId -and $act.device_registered) {
+      $DeviceId = "$($act.device_id)"
+      Ok "Device registered via exchange: $DeviceId"
+      LogLocal 'stage8b' 'device_registered' $DeviceId
+    }
+  } catch { Warn2 "Activation exchange failed: $($_.Exception.Message)"; LogLocal 'stage8b' 'fail' $_.Exception.Message }
+} else { LogLocal 'stage8b' 'skipped' 'no_jwt' }
+
 # ── STAGE 9 — Self-heal handshake (card ce413352) ────────────────────────────
 Banner 'STAGE 9 — Self-heal handshake' 'token (DPAPI) + config + Scheduled Task poller + first boot-audit'
 Why 'When something breaks — MCP loses connection, a token expires, a service'
