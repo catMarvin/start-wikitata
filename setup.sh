@@ -458,14 +458,29 @@ MCP_PATH="$HOME_DIR/git/wikitata/wt-mcp-server/index.js"
 # Identity/auth flows through the lobby IdP (auth.wikitata.com); content REST hits WT_USER.
 WT_SB_URL_TENANT="https://qfvnynyjeydxchtrwznk.supabase.co"
 WT_SB_KEY_TENANT="sb_publishable_xizlPDZaiw3dusGhPqul3A_28vmrpfu"
+# Data plane: tenant (lobby/qfvnyn, default) or super (platform/onoujm). Pass
+# WT_PLANE=super to install this machine under a platform/superuser identity (an
+# admin's own box). The zshrc WT_SB_URL already targets onoujm; this flips the MCP
+# too, and the lobby device-activation below auto-skips when there is no WT_JWT.
+# Publishable keys only here — full superuser power comes from the keychain
+# (wt-superuser-bootstrap), never from a baked secret. Canon: card 8ddf8981.
+WT_PLANE="${WT_PLANE:-tenant}"
+WT_SB_URL_SUPER="https://onoujmfhlrhvcqzjniei.supabase.co"
+WT_SB_KEY_SUPER="sb_publishable_dgNg9YFvNEDlvC4qXPrJcg_4uEtEQUT"
+if [ "$WT_PLANE" = "super" ]; then
+  WT_SB_URL_ACTIVE="$WT_SB_URL_SUPER"; WT_SB_KEY_ACTIVE="$WT_SB_KEY_SUPER"
+  dim "Plane: SUPERUSER (platform / onoujm) — WT_USER=$WT_USERNAME"
+else
+  WT_SB_URL_ACTIVE="$WT_SB_URL_TENANT"; WT_SB_KEY_ACTIVE="$WT_SB_KEY_TENANT"
+fi
 
 if has claude; then
   dim "Registering wikiTaTa MCP server with Claude Code..."
   claude mcp add --scope user wikitata node "$MCP_PATH" \
     -e WT_USER="$WT_USERNAME" \
-    -e WT_SB_URL="$WT_SB_URL_TENANT" \
-    -e WT_SB_KEY="$WT_SB_KEY_TENANT" 2>/dev/null \
-    && ok "wikiTaTa MCP registered (user scope)" \
+    -e WT_SB_URL="$WT_SB_URL_ACTIVE" \
+    -e WT_SB_KEY="$WT_SB_KEY_ACTIVE" 2>/dev/null \
+    && ok "wikiTaTa MCP registered (user scope, plane=$WT_PLANE)" \
     || warn "MCP registration failed — run 'claude mcp add' manually after setup"
 else
   warn "Claude Code not found — writing .mcp.json as fallback"
@@ -477,8 +492,8 @@ else
       "args": ["$MCP_PATH"],
       "env": {
         "WT_USER": "$WT_USERNAME",
-        "WT_SB_URL": "$WT_SB_URL_TENANT",
-        "WT_SB_KEY": "$WT_SB_KEY_TENANT"
+        "WT_SB_URL": "$WT_SB_URL_ACTIVE",
+        "WT_SB_KEY": "$WT_SB_KEY_ACTIVE"
       }
     }
   }
@@ -486,6 +501,19 @@ else
 EOF
   ok ".mcp.json (fallback)"
 fi
+
+# ── wikiTaTa user-switch helpers (install to ~/.local/bin) ───────────────────
+# wt-switch-user: flip the MCP (+ shell) to any user/plane later (tenant or super).
+# wt-superuser-bootstrap: tier-2 keychain check for full superuser power.
+mkdir -p "$HOME_DIR/.local/bin"
+for _tool in wt-switch-user wt-superuser-bootstrap; do
+  if curl -fsSL "https://start.wikitata.com/$_tool" -o "$HOME_DIR/.local/bin/$_tool" 2>/dev/null; then
+    chmod +x "$HOME_DIR/.local/bin/$_tool" && ok "$_tool installed (~/.local/bin)"
+  else
+    warn "$_tool fetch deferred — later: curl -fsSL https://start.wikitata.com/$_tool -o ~/.local/bin/$_tool && chmod +x ~/.local/bin/$_tool"
+  fi
+done
+grep -q '/.local/bin' "$HOME_DIR/.zshrc" 2>/dev/null || echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME_DIR/.zshrc"
 
 if [ ! -f "$HOME_DIR/.claude/settings.json" ]; then
   dim "Writing ~/.claude/settings.json"

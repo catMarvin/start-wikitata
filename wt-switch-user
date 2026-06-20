@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# wt-switch-user — re-point the wikiTaTa MCP (+ shell identity) to a different
+# user / data plane. General-purpose: tenant<->tenant, or tenant->superuser.
+# Canon: card 8ddf8981 (lane-setup-installer). NOT a one-off for any single user.
+#
+#   wt-switch-user <username>            tenant (lobby / qfvnyn)  — the default
+#   wt-switch-user <username> --super    superuser / platform (onoujm)
+#   wt-switch-user --who                 print the current MCP identity (no secrets)
+#
+# Tier 1 = IDENTITY (session-start as <username> + reads). FULL superuser power
+# (wt_sql_write / vault / deploys) ALSO needs the keychain secrets — after a
+# --super switch, run:  wt-superuser-bootstrap
+set -euo pipefail
+
+MCP_PATH="${WT_MCP_PATH:-$HOME/git/wikitata/wt-mcp-server/index.js}"
+ZSHRC="$HOME/.zshrc"
+# Publishable (anon, client-safe) keys — NOT secrets. Elevated power comes from the
+# keychain (wt-superuser-bootstrap), never from these.
+ONOUJM_URL="https://onoujmfhlrhvcqzjniei.supabase.co"
+ONOUJM_KEY="sb_publishable_dgNg9YFvNEDlvC4qXPrJcg_4uEtEQUT"
+QFVNYN_URL="https://qfvnynyjeydxchtrwznk.supabase.co"
+QFVNYN_KEY="sb_publishable_xizlPDZaiw3dusGhPqul3A_28vmrpfu"
+
+if [ "${1:-}" = "--who" ]; then
+  claude mcp get wikitata 2>/dev/null | grep -E "WT_USER|WT_SB_URL" || echo "wikitata MCP not registered"
+  exit 0
+fi
+
+USERNAME="${1:-}"
+PLANE="tenant"
+case "${2:-}" in
+  --super)        PLANE="super" ;;
+  --tenant|"")    PLANE="tenant" ;;
+  *) echo "unknown flag: ${2}"; exit 1 ;;
+esac
+[ -z "$USERNAME" ] && { echo "usage: wt-switch-user <username> [--super|--tenant]   (or --who)"; exit 1; }
+
+if [ "$PLANE" = "super" ]; then SB_URL="$ONOUJM_URL"; SB_KEY="$ONOUJM_KEY"; else SB_URL="$QFVNYN_URL"; SB_KEY="$QFVNYN_KEY"; fi
+
+command -v claude >/dev/null 2>&1 || { echo "Claude Code ('claude') not on PATH — install it first."; exit 1; }
+[ -f "$MCP_PATH" ] || { echo "wt-mcp-server not found at $MCP_PATH (override with WT_MCP_PATH=...)"; exit 1; }
+
+claude mcp remove wikitata >/dev/null 2>&1 || true
+claude mcp add --scope user wikitata node "$MCP_PATH" \
+  -e WT_USER="$USERNAME" -e WT_SB_URL="$SB_URL" -e WT_SB_KEY="$SB_KEY" >/dev/null
+
+# Keep the shell identity (WT_ACTOR / WT_SB_URL) in sync — idempotent, preserves the rest.
+touch "$ZSHRC"
+tmp="$(mktemp)"
+grep -vE '^export (WT_ACTOR|WT_SB_URL)=' "$ZSHRC" > "$tmp" || true
+{ echo "export WT_ACTOR=$USERNAME"; echo "export WT_SB_URL=$SB_URL"; } >> "$tmp"
+mv "$tmp" "$ZSHRC"
+
+echo "✓ wikiTaTa identity → WT_USER=$USERNAME  plane=$PLANE  ($SB_URL)"
+if [ "$PLANE" = "super" ]; then
+  echo "  ⚠ Tier 1 done (identity + reads). For FULL power (writes / vault / deploys):"
+  echo "      wt-superuser-bootstrap        # shows which keychain secrets are missing"
+fi
+echo "  → Restart Claude Code (quit + reopen) for the new identity to take effect."

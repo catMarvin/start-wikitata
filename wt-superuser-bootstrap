@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# wt-superuser-bootstrap — TIER 2: verify the keychain secrets that wt-mcp-server's
+# keychain-fetch.js loads for FULL superuser power (writes / vault / deploys).
+# Presence-only: it NEVER reads or prints a value. Missing secrets are injected by
+# your SUPERUSER Claude session on this machine via wt_vault_inject_to_keychain
+# (zero-plaintext — the value flows vault->keychain, never through the agent/chat).
+# Canon: card 8ddf8981.
+set -euo pipefail
+USER_ID="${USER:-${LOGNAME:-}}"
+[ -z "$USER_ID" ] && { echo "cannot resolve \$USER"; exit 1; }
+
+# Service-names MIRROR wt-mcp-server/keychain-fetch.js MAPPINGS (keep in sync).
+SECRETS=(
+  CF_ACCESS_PROBE_CLIENT_ID CF_ACCESS_PROBE_CLIENT_SECRET VERCEL_TOKEN
+  SUPABASE_MGMT_TOKEN WT_FORM_API_KEY SUPABASE_SECRET_KEY WT_SB_KEY
+  WT_USER_SUPABASE_ANON_KEY WT_USER_SUPABASE_SECRET_KEY
+)
+missing=()
+echo "Superuser keychain status (presence only — no values shown):"
+for s in "${SECRETS[@]}"; do
+  if /usr/bin/security find-generic-password -a "$USER_ID" -s "$s" -w >/dev/null 2>&1; then
+    printf "  ✓ %s\n" "$s"
+  else
+    printf "  ✗ %s  (missing)\n" "$s"; missing+=("$s")
+  fi
+done
+
+if [ ${#missing[@]} -eq 0 ]; then
+  echo ""
+  echo "All present — full superuser power available. Restart Claude Code if you just added these."
+  exit 0
+fi
+
+echo ""
+echo "${#missing[@]} missing. In your SUPERUSER Claude session ON THIS MACHINE, ask Claude to inject:"
+for s in "${missing[@]}"; do
+  echo "  • wt_vault_inject_to_keychain → keychain service \"$s\""
+done
+echo ""
+echo "Claude maps each keychain name to its vault entry (e.g. SUPABASE_MGMT_TOKEN ←"
+echo "vault SUPABASE_MGMT_TOKEN_v2). Plaintext goes vault→keychain server-side, never to chat."
+echo "Then quit + reopen Claude Code so wt-mcp-server reloads the keychain at startup."
