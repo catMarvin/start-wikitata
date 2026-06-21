@@ -49,9 +49,9 @@ echo -e "  ${C}→${RST}  ${BD}Installs the tools Claude Code depends on${RST}"
 echo -e "  ${D}     Node.js, Homebrew, and Xcode CLT are the runtime foundation.${RST}"
 echo -e "  ${D}     Claude Code and the wikiTaTa MCP server both run on Node.js.${RST}"
 printf '\n'
-echo -e "  ${C}→${RST}  ${BD}Connects your machine to GitHub and clones the repo${RST}"
-echo -e "  ${D}     The MCP server that links Claude to your workspace lives in${RST}"
-echo -e "  ${D}     the private wikiTaTa repo. SSH gives your machine trusted access.${RST}"
+echo -e "  ${C}→${RST}  ${BD}Connects your machine to GitHub + installs wikiTaTa shell helpers${RST}"
+echo -e "  ${D}     The wikiTaTa MCP itself is hosted (HTTPS, mcp.wikitata.com) — nothing runs${RST}"
+echo -e "  ${D}     locally. SSH gives your machine trusted access to your own code.${RST}"
 printf '\n'
 echo -e "  ${C}→${RST}  ${BD}Registers your workspace with Claude Code${RST}"
 echo -e "  ${D}     Claude needs to know where the MCP server is and who you are.${RST}"
@@ -403,10 +403,10 @@ fi
 # STEP 7: Clone wikiTaTa + Configure Claude Code
 # ═══════════════════════════════════════════════════════════════════════════════
 
-step_header "wikiTaTa Repo + Claude Config" "Clone the private repo and configure Claude Code"
-dim "Why: The MCP server that connects Claude to your workspace lives in this repo."
-dim "     Claude Config tells Claude where to find it and registers your credentials."
-dim "     Without this, Claude has no connection to your wikiTaTa workspace."
+step_header "Connect Claude to wikiTaTa" "Register the HTTPS MCP + install your shell helpers"
+dim "Why: Claude reaches your workspace through the wikiTaTa MCP over HTTPS (mcp.wikitata.com) —"
+dim "     a hosted server; nothing runs on your machine. This step registers that connection,"
+dim "     then installs your shell helpers + self-heal. Sign-in opens in your browser on first launch."
 blank
 
 HOME_DIR="$HOME"
@@ -416,10 +416,10 @@ mkdir -p "$HOME_DIR/git"
 if [ -d "$HOME_DIR/git/wikitata" ]; then
   ok "Repo is already cloned. Pulling latest..."
   cd "$HOME_DIR/git/wikitata" && git pull 2>/dev/null
-  if [ -f "$HOME_DIR/git/wikitata/wt-mcp-server/index.js" ]; then
-    ok "wt-mcp-server found"
+  if [ -f "$HOME_DIR/git/wikitata/shell-scripts/wikitata_env.sh" ]; then
+    ok "wikiTaTa shell helpers present"
   else
-    warn "wt-mcp-server/index.js missing — may need a fresh clone"
+    warn "shell-scripts missing — may need a fresh clone"
   fi
 else
   info "Cloning the wikiTaTa repo — this is where your tools live."
@@ -441,13 +441,8 @@ else
   fi
 fi
 
-# Install MCP server dependencies
-if [ -f "$HOME_DIR/git/wikitata/wt-mcp-server/package.json" ]; then
-  info "Installing wt-mcp-server dependencies..."
-  cd "$HOME_DIR/git/wikitata/wt-mcp-server" && npm install --silent 2>&1 | tail -1
-  ok "MCP server dependencies installed"
-  cd "$HOME_DIR"
-fi
+# No local MCP server to build — the wikiTaTa MCP is hosted over HTTPS (mcp.wikitata.com).
+# The clone above provides only the shell helpers + self-heal updater.
 
 blank
 
@@ -475,31 +470,24 @@ else
 fi
 
 if has claude; then
-  dim "Registering wikiTaTa MCP server with Claude Code..."
-  claude mcp add --scope user wikitata node "$MCP_PATH" \
-    -e WT_USER="$WT_USERNAME" \
-    -e WT_SB_URL="$WT_SB_URL_ACTIVE" \
-    -e WT_SB_KEY="$WT_SB_KEY_ACTIVE" 2>/dev/null \
-    && ok "wikiTaTa MCP registered (user scope, plane=$WT_PLANE)" \
-    || warn "MCP registration failed — run 'claude mcp add' manually after setup"
+  dim "Registering wikiTaTa MCP server (HTTPS) with Claude Code..."
+  claude mcp add --scope user --transport http wikitata https://mcp.wikitata.com/mcp 2>/dev/null \
+    && ok "wikiTaTa MCP registered (user scope, HTTPS -> mcp.wikitata.com)" \
+    || warn "MCP registration failed — run: claude mcp add --transport http wikitata https://mcp.wikitata.com/mcp"
+  dim "First Claude session opens your browser to sign in (OAuth) — that authorizes this machine. No local server, no secret on disk."
 else
-  warn "Claude Code not found — writing .mcp.json as fallback"
-  cat > "$HOME_DIR/.claude/.mcp.json" << EOF
+  warn "Claude Code not found — writing .mcp.json (HTTPS) as fallback"
+  cat > "$HOME_DIR/.claude/.mcp.json" << 'EOF'
 {
   "mcpServers": {
     "wikitata": {
-      "command": "node",
-      "args": ["$MCP_PATH"],
-      "env": {
-        "WT_USER": "$WT_USERNAME",
-        "WT_SB_URL": "$WT_SB_URL_ACTIVE",
-        "WT_SB_KEY": "$WT_SB_KEY_ACTIVE"
-      }
+      "type": "http",
+      "url": "https://mcp.wikitata.com/mcp"
     }
   }
 }
 EOF
-  ok ".mcp.json (fallback)"
+  ok ".mcp.json (HTTPS fallback)"
 fi
 
 # ── wikiTaTa user-switch helpers (install to ~/.local/bin) ───────────────────
