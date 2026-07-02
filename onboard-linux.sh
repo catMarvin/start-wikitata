@@ -30,7 +30,7 @@ WT_CONFIG_DIR="$HOME/.config/wikitata"
 WT_LOCAL_LOG="$WT_CONFIG_DIR/install.jsonl"
 PLATFORM="linux"
 STAGE=0
-TOTAL=11
+TOTAL=13
 ERRORS=0
 PKG_MGR=""
 PKG_INSTALL=""
@@ -622,7 +622,73 @@ if [ "$SELFHEAL_OK" -eq 1 ]; then
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STAGE 10 — Final Report
+# STAGE 10 — MCP-Verified Handshake (ONBOARD-M6, task f8c367c2, north-star 8c047748 §5)
+# Final gate: ask the LIVE MCP server (mcp.wikitata.com) to confirm this exact
+# (user, device) pair resolves to a real wikiTaTa account with a usable config,
+# and report platform health. The verdict prints HERE, before the terminal is
+# done — a hard failure (server unreachable / device unknown / account missing)
+# exits non-zero immediately so nothing pretends the install worked.
+# ═══════════════════════════════════════════════════════════════════════════════
+step_header "MCP-Verified Handshake" \
+  "Confirming Claude can see your wikiTaTa account — live, end-to-end"
+
+WT_MCP_BASE="${WT_MCP_BASE:-https://mcp.wikitata.com}"
+
+[ -n "$WT_DEVICE_ID" ] || {
+  log_local "stage10" "verify_fail" "no_device_id"
+  blank
+  fail "NOT VERIFIED — no device id from activation; cannot run the handshake."
+  info "Remedy: re-run the personalized one-liner from start.wikitata.com/onboard"
+  info "Help: request a new activation link at start.wikitata.com/request-token"
+  exit 1
+}
+
+VERIFY_URL="${WT_MCP_BASE}/health/first-connect?user=${WT_USERNAME}&device=${WT_DEVICE_ID}"
+VERIFY_RESP=""
+info "Contacting ${WT_MCP_BASE} ..."
+# NOTE: curl WITHOUT -f — a 404 verdict (device not recognized) carries its
+# remedy in the JSON body, which we want to read, not discard.
+_v=1
+while [ "$_v" -le 3 ]; do
+  VERIFY_RESP=$(curl -s --max-time 15 "$VERIFY_URL" 2>/dev/null) || VERIFY_RESP=""
+  [ -n "$VERIFY_RESP" ] && break
+  [ "$_v" -lt 3 ] && { warn "Handshake attempt $_v/3 failed — retrying in 3s..."; sleep 3; }
+  _v=$((_v + 1))
+done
+
+if [ -z "$VERIFY_RESP" ]; then
+  log_local "stage10" "verify_unreachable" "$WT_MCP_BASE"
+  blank
+  fail "NOT VERIFIED — could not reach the wikiTaTa MCP server after 3 attempts."
+  info "Remedy: check your internet connection, then re-run just the check:"
+  dim "  curl \"$VERIFY_URL\""
+  info "Help: re-run the one-liner from start.wikitata.com/onboard, or contact support"
+  exit 1
+fi
+
+if printf '%s' "$VERIFY_RESP" | grep -q '"ok":true'; then
+  PROBES_GREEN=$(printf '%s' "$VERIFY_RESP" | grep -oE '"probes_green":[0-9]+' | grep -oE '[0-9]+' | head -1 || true)
+  PROBES_TOTAL=$(printf '%s' "$VERIFY_RESP" | grep -oE '"probes_total":[0-9]+' | grep -oE '[0-9]+' | head -1 || true)
+  PROBES_MSG="health probes not reported"
+  [ -n "${PROBES_GREEN:-}" ] && [ -n "${PROBES_TOTAL:-}" ] && PROBES_MSG="${PROBES_GREEN}/${PROBES_TOTAL} health probes green"
+  blank
+  printf "  ${G}${BD}✅ VERIFIED — Claude can see your wikiTaTa account (%s): config OK, %s. Open Claude and say hello.${RST}\n" \
+    "$WT_USERNAME" "$PROBES_MSG"
+  log_local "stage10" "verify_pass" "probes:${PROBES_GREEN:-?}/${PROBES_TOTAL:-?}"
+  wt_svc_upsert "onboard:verified" "null" "$WT_MCP_BASE" "active" "first-connect-handshake"
+else
+  VERIFY_ERR=$(printf '%s' "$VERIFY_RESP" | grep -oE '"error":"[^"]+"' | head -1 | cut -d'"' -f4)
+  VERIFY_REMEDY=$(printf '%s' "$VERIFY_RESP" | grep -oE '"remedy":"[^"]+"' | head -1 | cut -d'"' -f4)
+  log_local "stage10" "verify_fail" "${VERIFY_ERR:-unknown_error}"
+  blank
+  fail "NOT VERIFIED — failed gate: ${VERIFY_ERR:-unknown_error}"
+  info "Remedy: ${VERIFY_REMEDY:-Re-run the personalized one-liner from start.wikitata.com/onboard}"
+  info "Help: request a new activation link at start.wikitata.com/request-token, or contact support"
+  exit 1
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STAGE 11 — Final Report
 # ═══════════════════════════════════════════════════════════════════════════════
 step_header "Complete" \
   "wikiTaTa is set up on this Linux machine"
@@ -633,6 +699,11 @@ if [ "$ERRORS" -eq 0 ] && [ "$VALIDATION_ERRORS" -eq 0 ]; then
 else
   printf "  ${Y}${BD}⚠ DONE with %d error(s) — see above.${RST}\n" "$((ERRORS + VALIDATION_ERRORS))"
 fi
+blank
+# Re-print the handshake verdict — step_header cleared the screen, and this
+# line is the one that must survive until the user reads it (ONBOARD-M6).
+printf "  ${G}${BD}✅ VERIFIED — Claude can see your wikiTaTa account (%s): config OK, %s. Open Claude and say hello.${RST}\n" \
+  "$WT_USERNAME" "$PROBES_MSG"
 blank
 printf "  ${BD}What's set up:${RST}\n"
 dim "  Node.js:       $(node -v 2>/dev/null || echo 'see above')"
