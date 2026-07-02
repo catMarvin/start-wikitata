@@ -299,10 +299,77 @@ $mcpList = claude mcp list 2>$null | Out-String
 if ($mcpList -match 'wikitata') { Ok 'MCP registration visible to Claude CLI' } else { Warn2 'wikitata not in claude mcp list'; $v++ }
 LogLocal 'stage10' ($(if ($v -eq 0) { 'validation_pass' } else { 'validation_fail' })) "errors:$v"
 
-# ── STAGE 11 — Final report ──────────────────────────────────────────────────
+# ── STAGE 11 — MCP-Verified Handshake (ONBOARD-M6, task f8c367c2, north-star 8c047748 §5) ──
+# Final gate: ask the LIVE MCP server (mcp.wikitata.com) to confirm this exact
+# (user, device) pair resolves to a real wikiTaTa account with a usable config,
+# and report platform health. The verdict prints HERE, before the terminal is
+# done — a hard failure (server unreachable / device unknown / account missing)
+# throws so nothing pretends the install worked (stops the irm|iex run without
+# killing the window).
+Banner 'STAGE 11 — MCP-Verified Handshake' 'Confirming Claude can see your wikiTaTa account — live, end-to-end'
+Why 'This is the proof step: the live wikiTaTa MCP server confirms your account,'
+Why 'this device, and platform health — end-to-end, before the terminal closes.'
+
+$WT_MCP_BASE = if ($env:WT_MCP_BASE) { $env:WT_MCP_BASE } else { 'https://mcp.wikitata.com' }
+
+if (-not $DeviceId) {
+  LogLocal 'stage11' 'verify_fail' 'no_device_id'
+  Write-Host '  FAIL: NOT VERIFIED — no device id from registration; cannot run the handshake.' -ForegroundColor Red
+  Write-Host '  Remedy: re-run the personalized one-liner from start.wikitata.com/onboard (WT_JWT + WT_SB_ANON_KEY must be set)' -ForegroundColor Yellow
+  Write-Host '  Help: request a new activation link at start.wikitata.com/request-token, or contact support' -ForegroundColor Yellow
+  throw 'VERIFY failed: no device id'
+}
+
+$verifyUrl = "$WT_MCP_BASE/health/first-connect?user=$WT_USERNAME&device=$DeviceId"
+$verify = $null
+Write-Host "  → Contacting $WT_MCP_BASE ..." -ForegroundColor Cyan
+for ($vh = 1; $vh -le 3; $vh++) {
+  try { $verify = Invoke-RestMethod -Uri $verifyUrl -TimeoutSec 15; break }
+  catch {
+    # A 4xx verdict (device not recognized) carries its remedy in the JSON
+    # body — read it instead of retrying blindly.
+    $respBody = $null
+    try { $respBody = $_.ErrorDetails.Message | ConvertFrom-Json } catch {}
+    if ($respBody -and ($respBody.PSObject.Properties.Name -contains 'ok')) { $verify = $respBody; break }
+    if ($vh -lt 3) { Write-Host "  Handshake attempt $vh/3 failed — retrying in 3s..." -ForegroundColor Yellow; Start-Sleep -Seconds 3 }
+  }
+}
+
+if (-not $verify) {
+  LogLocal 'stage11' 'verify_unreachable' $WT_MCP_BASE
+  Write-Host '  FAIL: NOT VERIFIED — could not reach the wikiTaTa MCP server after 3 attempts.' -ForegroundColor Red
+  Write-Host '  Remedy: check your internet connection, then re-run just the check:' -ForegroundColor Yellow
+  Write-Host "    irm `"$verifyUrl`"" -ForegroundColor DarkGray
+  Write-Host '  Help: re-run the one-liner from start.wikitata.com/onboard, or contact support' -ForegroundColor Yellow
+  throw 'VERIFY failed: MCP server unreachable'
+}
+
+$script:VERIFIED_LINE = ''
+if ($verify.ok -eq $true) {
+  $pg = if ($verify.PSObject.Properties['probes_green']) { $verify.probes_green } else { $null }
+  $pt = if ($verify.PSObject.Properties['probes_total']) { $verify.probes_total } else { $null }
+  $probesMsg = if ($null -ne $pg -and $null -ne $pt) { "$pg/$pt health probes green" } else { 'health probes not reported' }
+  $script:VERIFIED_LINE = "✅ VERIFIED — Claude can see your wikiTaTa account ($WT_USERNAME): config OK, $probesMsg. Open Claude and say hello."
+  Write-Host "  $($script:VERIFIED_LINE)" -ForegroundColor Green
+  LogLocal 'stage11' 'verify_pass' "probes:$pg/$pt"
+  WtSvcUpsert 'onboard:verified' $null $WT_MCP_BASE 'active' 'first-connect-handshake'
+} else {
+  $gate   = if ($verify.PSObject.Properties['error'])  { $verify.error }  else { 'unknown_error' }
+  $remedy = if ($verify.PSObject.Properties['remedy']) { $verify.remedy } else { 'Re-run the personalized one-liner from start.wikitata.com/onboard' }
+  LogLocal 'stage11' 'verify_fail' $gate
+  Write-Host "  FAIL: NOT VERIFIED — failed gate: $gate" -ForegroundColor Red
+  Write-Host "  Remedy: $remedy" -ForegroundColor Yellow
+  Write-Host '  Help: request a new activation link at start.wikitata.com/request-token, or contact support' -ForegroundColor Yellow
+  throw "VERIFY failed: $gate"
+}
+
+# ── STAGE 12 — Final report ──────────────────────────────────────────────────
 Banner 'COMPLETE' 'wikiTaTa is set up on this Windows machine'
 if (($script:Errors + $v) -eq 0) { Write-Host "  PASS — everything installed and verified." -ForegroundColor Green }
 else { Write-Host "  DONE with $($script:Errors + $v) issue(s) — see warnings above." -ForegroundColor Yellow }
+# Re-print the handshake verdict — this is the line that must survive until the
+# user reads it (ONBOARD-M6).
+if ($script:VERIFIED_LINE) { Write-Host "  $($script:VERIFIED_LINE)" -ForegroundColor Green }
 Write-Host "`n  Next steps:" -ForegroundColor White
 Write-Host '  1. Open a NEW terminal (fresh PATH)'
 Write-Host '  2. Run: claude'
