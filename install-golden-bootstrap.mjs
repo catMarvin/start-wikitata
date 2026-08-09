@@ -50,7 +50,8 @@ const sp = `${CLAUDE_DIR}/settings.json`;
 const cfg = existsSync(sp) ? JSON.parse(readFileSync(sp, "utf8")) : {};
 cfg.hooks ??= {};
 cfg.hooks.SessionStart ??= [];
-const CMD = "node ~/.claude/bootstrap/wt-golden-bootstrap.mjs";
+// absolute + forward-slash + quoted → works on Linux/macOS AND Windows (Claude Code hooks don't expand ~ on Windows)
+const CMD = `node "${dst.split(String.fromCharCode(92)).join("/")}"`;  // 92=backslash → forward slashes (Windows)
 const already = JSON.stringify(cfg.hooks.SessionStart).includes("wt-golden-bootstrap");
 if (already) {
   console.log("✓ SessionStart hook already wired — no change.");

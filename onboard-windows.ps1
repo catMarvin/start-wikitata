@@ -193,6 +193,20 @@ try {
   LogLocal 'stage7' 'ok' 'mcp_registered'
 } catch { Warn2 "MCP registration failed — run 'claude mcp add' manually: $($_.Exception.Message)"; LogLocal 'stage7' 'fail' $_.Exception.Message }
 
+# ── STAGE 7b — Golden-bootstrap seed: self-healing config sync (card 2aae217c, Part B) ──
+# Fetch the SIGNED golden hook bundle, verify vs the pinned key, install the bootstrap, and wire a
+# SessionStart hook so every future session parity-checks config. Idempotent, non-clobbering.
+Banner 'STAGE 7b — Golden-bootstrap seed' 'signed golden bundle → SessionStart parity hook'
+$SeedMjs = Join-Path $RepoDir 'install-golden-bootstrap.mjs'
+if (Test-Path $SeedMjs) {
+  try {
+    $env:WT_ACTOR = $WT_USERNAME
+    node $SeedMjs
+    Ok 'Golden-bootstrap seed installed — SessionStart parity check wired (card 2aae217c)'
+    LogLocal 'stage7b' 'ok' 'golden_seed'
+  } catch { Warn2 "Golden-bootstrap seed skipped — run later: node `"$SeedMjs`""; LogLocal 'stage7b' 'fail' $_.Exception.Message }
+}
+
 # ── STAGE 8 — Device registration ────────────────────────────────────────────
 Banner 'STAGE 8 — Device registration' 'this machine → Settings → Devices'
 Why 'Registers this machine in your wikiTaTa workspace. Lets you see and manage'
