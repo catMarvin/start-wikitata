@@ -479,6 +479,19 @@ fi
 
 log_local "stage7" "mcp_registered" "path:$MCP_SERVER_DIR"
 
+# ── Golden-bootstrap seed: self-healing config sync (card 2aae217c, Part B) ──
+# Fetches the SIGNED golden hook bundle, verifies vs the pinned key, installs the bootstrap,
+# and wires a SessionStart hook so every future session parity-checks config. Idempotent.
+SEED_MJS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/install-golden-bootstrap.mjs"
+if [ -f "$SEED_MJS" ]; then
+  if WT_ACTOR="$WT_USERNAME" node "$SEED_MJS" 2>/dev/null; then
+    ok "Golden-bootstrap seed installed — SessionStart parity check wired (card 2aae217c)"
+  else
+    warn "Golden-bootstrap seed skipped — run later: WT_ACTOR=$WT_USERNAME node $SEED_MJS"
+  fi
+  log_local "stage7b" "golden_seed" "installed"
+fi
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # STAGE 8 — Port Discovery & Service Registration
 # ═══════════════════════════════════════════════════════════════════════════════
