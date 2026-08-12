@@ -95,7 +95,9 @@ const run = (bin, args, opts = {}) => spawnSync(bin, args, { encoding: 'utf8', t
 
 // ── 5. wt-guard secret provisioning (env → .env → keychain) — presence only ──
 {
-  const envSet = !!(process.env.SUPABASE_SECRET_KEY || process.env.WT_SB_KEY);
+  // only the SERVICE secret works for wt_guard_audit_insert; WT_SB_KEY is the publishable key
+  // (anon) and CANNOT call it — counting it here was a false PASS.
+  const envSet = !!process.env.SUPABASE_SECRET_KEY;
   const dotenv = existsSync(`${H}/.claude/wt-guard/.env`);
   let keychain = false;
   try { keychain = !!execFileSync('security', ['find-generic-password', '-a', process.env.USER || '', '-s', 'wikitata-guard-secret', '-w'], { encoding: 'utf8', timeout: 1500, stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch {}
