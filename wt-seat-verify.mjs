@@ -84,7 +84,13 @@ const run = (bin, args, opts = {}) => spawnSync(bin, args, { encoding: 'utf8', t
   let live = 0;
   for (const rc of rcs) for (const ln of readFileSync(rc, 'utf8').split('\n'))
     if (/^\s*export\s+WT_SB_(KEY|URL)=/.test(ln)) live++;   // count only, never print the value
-  add('env.no-crosswiring', live === 0 ? 'PASS' : 'WARN', live === 0 ? 'no live WT_SB_* shell export' : `${live} live export(s) — comment out (keychain-only)`);
+  // ALSO check the running process env — a WT_SB_* set by any path (rc, sourced file, launchd, MCP)
+  // crosswires the golden fetch (the 401 Dome hit). The v11 bootstrap self-cleans, but flag the source.
+  const procVars = ['WT_SB_KEY', 'WT_SB_URL'].filter(v => process.env[v]);
+  const bad = live + procVars.length;
+  add('env.no-crosswiring', bad === 0 ? 'PASS' : 'WARN',
+    bad === 0 ? 'no WT_SB_* export or process var'
+      : `${live} rc export(s)${procVars.length ? ' + process: ' + procVars.join(',') : ''} — v11 bootstrap self-cleans, but find+remove the source`);
 }
 
 // ── 5. wt-guard secret provisioning (env → .env → keychain) — presence only ──
