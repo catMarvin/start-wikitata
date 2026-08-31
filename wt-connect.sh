@@ -21,7 +21,10 @@ set -u
 USERNAME="${1:-$(id -un)}"
 MCP_URL="https://mcp.wikitata.com/mcp"
 SB_URL="https://onoujmfhlrhvcqzjniei.supabase.co"   # onoujm platform (publishable-only in env)
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd || echo /tmp)"
+WT_BASE="${WT_BASE:-https://start.wikitata.com}"   # seed origin when piped from curl
+LOG="$HOME/wt-connect-$(date +%Y%m%d-%H%M%S).log"
+exec > >(tee -a "$LOG") 2>&1                        # capture EVERYTHING for the handoff
 CLAUDE_DIR="$HOME/.claude"
 TS="$(date +%Y%m%d-%H%M%S)"
 BK="$HOME/.wt-connect-backups/$TS"
@@ -114,9 +117,20 @@ fi
 
 # ---------------------------------------------------------------------------
 hdr "4. Golden bundle - the guard-hook loader (signed, fail-closed)"
+# Seed resolution: next to the script when cloned, otherwise fetched from WT_BASE so this
+# works when piped straight from curl (S839 - the piped path had no seed and died silently).
 SEED="$SCRIPT_DIR/install-golden-bootstrap.mjs"
-# env -u WT_SB_KEY/WT_SB_URL: a crosswired stale key/url pair in the shell 401s the signed
-# fetch (S782). Unsetting them forces the correct baked-in onoujm publishable defaults.
+if [ ! -f "$SEED" ]; then
+  SEED="$BK/install-golden-bootstrap.mjs"
+  if curl -fsSL --max-time 30 "$WT_BASE/install-golden-bootstrap.mjs" -o "$SEED" 2>/dev/null; then
+    ok "fetched seed from $WT_BASE"
+  else
+    bad "could not fetch install-golden-bootstrap.mjs from $WT_BASE (network? or not deployed)"
+    rm -f "$SEED"
+  fi
+fi
+# A crosswired stale key/url pair in the shell 401s the signed fetch (S782); the calls below
+# unset them so the correct baked-in onoujm publishable defaults are used.
 if [ -f "$SEED" ]; then
   if env -u WT_SB_KEY -u WT_SB_URL WT_ACTOR="$USERNAME" WT_USER="$USERNAME" node "$SEED"; then ok "golden seed installed + SessionStart wired"
   else bad "golden seed failed - see output above"; fi
@@ -129,7 +143,22 @@ if [ -f "$SEED" ]; then
     else warn "golden apply reported drift/consent - re-run: node $BOOT --apply"; fi
   fi
 else
-  bad "install-golden-bootstrap.mjs not next to this script ($SCRIPT_DIR)"
+  bad "no seed - expected $SCRIPT_DIR/install-golden-bootstrap.mjs or $WT_BASE/install-golden-bootstrap.mjs"
+fi
+
+# ---------------------------------------------------------------------------
+hdr "4b. Guard enforcement - flip the hooks from warn-only to blocking"
+# S839 (card b022bc84): wt-guard/lib/io.mjs downgrades every BLOCK to a stderr warn unless
+# WT_GUARD_ENFORCE=1. Without this a seat reports parity while enforcing nothing.
+if node -e '
+const fs=require("fs"), p=process.env.HOME+"/.claude/settings.json";
+let c={}; try{ c=JSON.parse(fs.readFileSync(p,"utf8")); }catch(e){}
+c.env=c.env||{};
+if(c.env.WT_GUARD_ENFORCE!=="1"){ c.env.WT_GUARD_ENFORCE="1"; fs.writeFileSync(p, JSON.stringify(c,null,2)); }
+' >/dev/null 2>&1; then
+  ok "WT_GUARD_ENFORCE=1 in settings.json (takes effect in a NEW session)"
+else
+  bad "could not set WT_GUARD_ENFORCE - guards would stay warn-only"
 fi
 
 # ---------------------------------------------------------------------------
@@ -141,6 +170,14 @@ SETTINGS="$CLAUDE_DIR/settings.json"
 if [ -f "$SETTINGS" ] && grep -q 'wt-golden-bootstrap' "$SETTINGS" 2>/dev/null; then
   ok "SessionStart hook wired to golden bootstrap"
 else bad "SessionStart hook NOT wired in settings.json"; fi
+
+PARITY="$( (unset WT_SB_KEY WT_SB_URL; WT_ACTOR="$USERNAME" WT_USER="$USERNAME" \
+  node "$CLAUDE_DIR/bootstrap/wt-golden-bootstrap.mjs") 2>&1 | head -1 )"
+case "$PARITY" in
+  *"signature OK"*)  ok "golden bundle verified: $PARITY"
+                     ok "this device now reports into hook_parity (Q had NO row before this)" ;;
+  *)                 bad "parity check failed: $PARITY" ;;
+esac
 
 HOOKN=0; [ -d "$CLAUDE_DIR/hooks" ] && HOOKN="$(ls -1 "$CLAUDE_DIR/hooks" 2>/dev/null | wc -l | tr -d ' ')"
 if [ "$HOOKN" -ge 10 ]; then ok "$HOOKN guard hooks present in ~/.claude/hooks"
@@ -158,6 +195,7 @@ else
 fi
 c ""
 c "Backups (full revert): $BK"
+c "Full transcript (send this to Todd if anything failed): $LOG"
 c ""
 c "NEXT - finish in a fresh Claude session:"
 c "  1. open a NEW terminal (so ~/.zshrc reloads), then run:  claude"
