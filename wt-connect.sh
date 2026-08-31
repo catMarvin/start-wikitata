@@ -104,7 +104,7 @@ cat > "$ENVF" <<EOF
 export WT_ACTOR="$USERNAME"
 export WT_USER="$USERNAME"
 export WT_SB_URL="$SB_URL"
-export WT_MACHINE_ID="\$(scutil --get LocalHostName 2>/dev/null || hostname -s)"
+export WT_MACHINE_ID="\${WT_MACHINE_ID:-\$(scutil --get LocalHostName 2>/dev/null || hostname -s)}"
 export WT_OUTPUT_DIR="\$HOME/Downloads/claude-output"
 EOF
 ok "wrote canonical env -> $ENVF (WT_USER=$USERNAME, plane=onoujm)"
