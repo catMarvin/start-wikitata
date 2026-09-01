@@ -107,6 +107,23 @@ const run = (bin, args, opts = {}) => spawnSync(bin, args, { encoding: 'utf8', t
 }
 
 // ── report ──────────────────────────────────────────────────────────────────
+// --json emits the verdict table as machine-readable JSON on stdout and nothing else, so
+// boot-audit.js can fold this seat's verification into wikitata.machine_boot_audit as a section
+// (Todd, S862). Without it the deepest seat check was visible only to whoever ran it — which is
+// why Dome's state could never be seen from the DB. Exit code is identical in both modes.
+if (process.argv.includes('--json')) {
+  console.log(JSON.stringify({
+    seat: process.env.USER || null,
+    hostname: run('hostname', []).stdout?.trim() || null,
+    generated_at: new Date().toISOString(),
+    results: R,
+    pass: R.filter((r) => r.status === 'PASS').length,
+    warn: R.filter((r) => r.status === 'WARN').length,
+    fail: R.filter((r) => r.status === 'FAIL').length,
+  }));
+  process.exit(R.filter((r) => r.status === 'FAIL').length > 0 ? 1 : 0);
+}
+
 const pad = (s, n) => String(s).padEnd(n).slice(0, n);
 console.log(`\n═══ wikiTaTa seat integrity — ${process.env.USER || 'user'}@${run('hostname', []).stdout?.trim() || '?'} ═══\n`);
 console.log(pad('CHECK', 26) + pad('STATUS', 8) + 'DETAIL');
