@@ -162,7 +162,51 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-hdr "5. Audit - confirm the environment is wired correctly"
+# S862: a seat could be fully wired locally and still be INVISIBLE server-side - Dome ran for
+# months with zero rows in machine_boot_audit, so "what is actually on that Mac" was unanswerable
+# without someone sitting at it. This stage provisions the self-heal device token/config and
+# submits one full audit (git repos + worktrees, variable NAMES+lengths, keychain NAMES,
+# and the seat-verify verdict folded in). Never fatal: a seat with no repo checkout still
+# finishes connecting.
+hdr "5. Machine audit - report this seat's real configuration to the database"
+SELFHEAL_DIR="$HOME/git/wikitata/tools/self-heal"
+if [ -z "${WT_DEVICE_ID:-}" ]; then
+  warn "WT_DEVICE_ID not set - skipping the machine audit"
+  c "       ask Todd for this seat's device id, then re-run:  WT_DEVICE_ID=<uuid> bash $0"
+elif [ ! -d "$SELFHEAL_DIR" ]; then
+  warn "no $SELFHEAL_DIR - skipping the machine audit"
+  c "       clone the repo first:  git clone git@github.com:catMarvin/wikitata.git \$HOME/git/wikitata"
+else
+  CFG="$HOME/Library/Application Support/wikitata/selfheal.json"
+  # the publishable (anon) key is already a baked literal in the golden bootstrap this script
+  # installed in stage 4 - read it from there rather than carrying a second copy (db5c135a).
+  PUBKEY="$(sed -n 's/.*|| "\(sb_publishable_[A-Za-z0-9_-]*\)".*/\1/p' \
+            "$CLAUDE_DIR/bootstrap/wt-golden-bootstrap.mjs" 2>/dev/null | head -1)"
+  if [ ! -f "$CFG" ] && [ -z "$PUBKEY" ]; then
+    warn "could not resolve the publishable key from the golden bootstrap - skipping provisioning"
+  elif [ ! -f "$CFG" ]; then
+    if DEVICE_ID="$WT_DEVICE_ID" SB_URL="$SB_URL" ANON_KEY="$PUBKEY" \
+         bash "$SELFHEAL_DIR/bootstrap-macos.sh" >>"$LOG" 2>&1; then
+      ok "self-heal provisioned (device token in keychain, config written)"
+    else
+      warn "self-heal provisioning reported errors - see $LOG"
+    fi
+  else
+    ok "self-heal already provisioned"
+  fi
+  if [ -f "$CFG" ]; then
+    if (unset WT_SB_KEY WT_SB_URL; WT_ACTOR="$USERNAME" WT_USER="$USERNAME" \
+         node "$SELFHEAL_DIR/boot-audit.js" --trigger install) >>"$LOG" 2>&1; then
+      ok "full machine audit submitted to wikitata.machine_boot_audit"
+      c "       Todd can now read this seat's real state from the DB - nothing to paste."
+    else
+      warn "boot-audit did not submit - see $LOG (the seat is still connected)"
+    fi
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+hdr "6. Audit - confirm the environment is wired correctly"
 if claude mcp get wikitata >/dev/null 2>&1; then ok "MCP resolves: wt_* tools will load in-session"
 else bad "MCP does NOT resolve - Claude will have no wt_ tools"; fi
 
