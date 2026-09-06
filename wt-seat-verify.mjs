@@ -217,9 +217,12 @@ const ANTI = [
   ['enforce-off', /WT_GUARD_ENFORCE\s*[=:]\s*["']?(0|false|off)\b/i],
 ];
 const scanText = (text, cap = 20) => {
-  const hits = []; const lines = text.split('\n');
+  const hits = []; const lines = text.split('\n'); let inLaw = false;
   for (let i = 0; i < lines.length && hits.length < cap; i++) {
     const ln = lines[i]; if (ln.length > 600) continue;
+    // the stamped cards-first LAW block names the retired ledgers on purpose — never a hit
+    if (ln.includes('wt:cards-first-law')) { inLaw = true; continue; }
+    if (inLaw) { if (ln.trim() === '') inLaw = false; continue; }
     for (const [label, re] of ANTI) if (re.test(ln)) { hits.push({ line: i + 1, kind: label, text: REDACT(ln.trim()).slice(0, 160) }); break; }
   }
   return hits;
@@ -377,7 +380,8 @@ section('env', () => {
   const procVars = Object.keys(process.env).filter((k) => /^(WT_|SUPABASE_|CLAUDE_|ANTHROPIC_)/.test(k)).map((k) => ({ name: k, len: String(process.env[k]).length }));
   const agents = walk(`${H}/Library/LaunchAgents`, 0, (_, n) => n.endsWith('.plist')).map((p) => { const j = run('plutil', ['-convert', 'json', '-o', '-', p]); let keys = []; try { keys = Object.keys(JSON.parse(j.stdout || '{}').EnvironmentVariables || {}); } catch {} return { plist: basename(p), env_keys: keys }; }).filter((a) => a.env_keys.length);
   audit.env = { rc_exports: exports, process_vars: procVars, launchd_env: agents, crosswire };
-  add('env.no-crosswiring', crosswire ? 'FAIL' : 'PASS', crosswire ? `${crosswire} WT_SB_* export(s)/var(s) — crosswires the golden fetch (401); remove the source` : 'no WT_SB_* export or process var');
+  const rcCross = exports.filter((e) => /^WT_SB_(KEY|URL)$/.test(e.name)).length;
+  add('env.no-crosswiring', rcCross ? 'FAIL' : crosswire ? 'WARN' : 'PASS', rcCross ? `${rcCross} WT_SB_* rc export(s) — crosswires the golden fetch (401); remove the source` : crosswire ? `WT_SB_* present in the process env (a sourced env file, not an rc export) — the bootstrap self-cleans them since v11; find the source: grep -rl WT_SB_KEY ~/.zshrc ~/.zprofile ~/.wikitata 2>/dev/null` : 'no WT_SB_* export or process var');
   add('env.secrets-in-env', secretsInEnv.length ? 'FAIL' : 'PASS', secretsInEnv.length ? `value-bearing secret export(s): ${secretsInEnv.map((e) => `${e.file}:${e.line} ${e.name}`).join(', ').slice(0, 250)} — keychain-only law (card e994f3f8)` : `${exports.length} WT-family export(s), none value-bearing secrets`);
   const idEnv = exports.filter((e) => /^WT_(USER|ACTOR)$/.test(e.name));
   if (idEnv.length) add('env.identity-export', 'INFO', idEnv.map((e) => `${e.file}:${e.line} ${e.name}`).join(', '));
