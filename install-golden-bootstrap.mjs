@@ -11,7 +11,10 @@ import { dirname } from "node:path";
 const PINNED_PUBLIC_KEY_B64 = "evwYUjg2dN326mRE9kp46DrmL2TcIrzsenZyPM0lcBw=";
 const SB_URL = process.env.WT_SB_URL || "https://onoujmfhlrhvcqzjniei.supabase.co";
 const SB_KEY = process.env.WT_SB_KEY || "sb_publishable_dgNg9YFvNEDlvC4qXPrJcg_4uEtEQUT";
-const CALLER = process.env.WT_ACTOR || process.env.WT_USER || "todd";
+// S878: no identity fallback. A seed that defaults to "todd" mis-attributes every hook_parity row from a
+// non-Todd seat (Dome's Mac reported as todd for 3 weeks). Resolve, or refuse.
+const CALLER = process.env.WT_ACTOR || process.env.WT_USER || (() => { try { return readFileSync(`${homedir()}/.claude/hooks/.cacp-user`, "utf8").trim(); } catch { return ""; } })();
+if (!CALLER) { console.error("⛔ install-golden-bootstrap: no identity (set WT_USER=<wikitata username> or write ~/.claude/hooks/.cacp-user) — refusing rather than seeding as the wrong user."); process.exit(2); }
 const CLAUDE_DIR = `${homedir()}/.claude`;
 const BOOT_PATH = "bootstrap/wt-golden-bootstrap.mjs";
 const sha256 = (b) => createHash("sha256").update(b).digest("hex");
